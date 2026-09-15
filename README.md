@@ -303,3 +303,24 @@ pip install -r requirements.txt
 ```bash
 python main.py
 ```
+
+
+GAMEJAM/
+├── .gitignore
+├── .python-version
+├── requirements.txt
+├── README.md
+├── main.py                  <-- Point d'entrée pour lancer le jeu
+├── data/                    <-- Fichiers de sauvegarde
+│   └── leaderboard.json     <-- Tableau des scores local
+├── assets/                  <-- Toutes les ressources externes
+│   ├── sprites/             <-- Personnages, murs, torches, cadavres
+│   ├── audio/               <-- Musique flippante, bruitages
+│   ├── fonts/               <-- Polices d'écriture pour l'UI
+│   └── maps/                <-- Fichiers Tiled (.tmx) ou JSON pour les niveaux
+└── src/                     <-- Code source du jeu
+    ├── constants.py         <-- Tailles d'écran, timer de mort, couleurs
+    ├── views/               <-- Les différents écrans (Arcade Views)
+    ├── entities/            <-- Les objets interactifs
+    ├── mechanics/           <-- Moteurs logiques
+    └── ui/                  <-- Éléments d'interface
