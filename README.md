@@ -1,8 +1,12 @@
-# Configuration de l'environnement (Windows)
+# Configuration de l'environnement
 
-Toutes les étapes se font dans un terminal **PowerShell**.
+Choisis la section correspondant à ton système d'exploitation.
 
 ---
+
+# Windows
+
+Toutes les étapes se font dans un terminal **PowerShell**.
 
 ## 1. Cloner le repo
 
@@ -93,5 +97,209 @@ pip install -r requirements.txt
 ## 7. Lancer le jeu
 
 ```powershell
+python main.py
+```
+
+---
+
+# macOS
+
+Toutes les étapes se font dans un terminal (**Terminal.app** ou **iTerm**).
+
+## 1. Cloner le repo
+
+```bash
+git clone https://github.com/leodnz92700-cyber/GAMEJAM.git
+cd GAMEJAM
+```
+
+---
+
+## 2. Installer pyenv
+
+Le plus simple est de passer par **Homebrew** (installe Homebrew d'abord si besoin, via [brew.sh](https://brew.sh)) :
+
+```bash
+brew update
+brew install pyenv
+```
+
+Ajoute ensuite pyenv à ton shell. Si tu utilises **zsh** (par défaut sur macOS récent) :
+
+```bash
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.zshrc
+echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.zshrc
+echo 'eval "$(pyenv init -)"' >> ~/.zshrc
+```
+
+**Important :** Ferme complètement le terminal et rouvre-le dans le dossier `GAMEJAM` pour prendre en compte les variables d'environnement.
+
+Vérifie que pyenv répond :
+
+```bash
+pyenv --version
+```
+
+---
+
+## 3. Installer Python 3.12.9 via pyenv
+
+Le repo contient déjà le fichier `.python-version` qui demande la `3.12.9`. Lance simplement :
+
+```bash
+pyenv install 3.12.9
+```
+
+Vérifie que la bonne version est active :
+
+```bash
+python --version
+```
+
+Sortie attendue : `Python 3.12.9`
+
+---
+
+## 4. Créer et activer l'environnement virtuel (.venv)
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Le préfixe `(.venv)` doit apparaître au début de la ligne de commande.
+
+---
+
+## 5. Installer les bibliothèques du projet
+
+Avec le `(.venv)` activé :
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+---
+
+## 6. Lier l'interpréteur dans PyCharm
+
+1. Ouvre le dossier du projet dans PyCharm.
+2. Ouvre les paramètres : `Cmd + ,` > Project: GAMEJAM > Python Interpreter.
+3. Clique sur **Add Interpreter** > **Add Local Interpreter...**.
+4. Sélectionne **Existing** et va chercher : `chemin/vers/GAMEJAM/.venv/bin/python`
+5. Valide avec **OK**.
+
+---
+
+## 7. Lancer le jeu
+
+```bash
+python main.py
+```
+
+---
+
+# Linux
+
+Toutes les étapes se font dans un terminal (**bash**).
+
+## 1. Cloner le repo
+
+```bash
+git clone https://github.com/leodnz92700-cyber/GAMEJAM.git
+cd GAMEJAM
+```
+
+---
+
+## 2. Installer pyenv
+
+Installe d'abord les dépendances de build (exemple pour Debian/Ubuntu) :
+
+```bash
+sudo apt update
+sudo apt install -y make build-essential libssl-dev zlib1g-dev \
+libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
+libncursesw5-dev xz-utils tk-dev libxml2-dev libxmlsec1-dev libffi-dev liblzma-dev
+```
+
+Installe ensuite pyenv :
+
+```bash
+curl https://pyenv.run | bash
+```
+
+Ajoute pyenv à ton shell (exemple pour **bash**, remplace `~/.bashrc` par `~/.zshrc` si tu utilises zsh) :
+
+```bash
+echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bashrc
+echo 'command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"' >> ~/.bashrc
+echo 'eval "$(pyenv init -)"' >> ~/.bashrc
+```
+
+**Important :** Ferme complètement le terminal et rouvre-le dans le dossier `GAMEJAM` pour prendre en compte les variables d'environnement.
+
+Vérifie que pyenv répond :
+
+```bash
+pyenv --version
+```
+
+---
+
+## 3. Installer Python 3.12.9 via pyenv
+
+Le repo contient déjà le fichier `.python-version` qui demande la `3.12.9`. Lance simplement :
+
+```bash
+pyenv install 3.12.9
+```
+
+Vérifie que la bonne version est active :
+
+```bash
+python --version
+```
+
+Sortie attendue : `Python 3.12.9`
+
+---
+
+## 4. Créer et activer l'environnement virtuel (.venv)
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+Le préfixe `(.venv)` doit apparaître au début de la ligne de commande.
+
+---
+
+## 5. Installer les bibliothèques du projet
+
+Avec le `(.venv)` activé :
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+---
+
+## 6. Lier l'interpréteur dans PyCharm
+
+1. Ouvre le dossier du projet dans PyCharm.
+2. Ouvre les paramètres : `Ctrl + Alt + S` > Project: GAMEJAM > Python Interpreter.
+3. Clique sur **Add Interpreter** > **Add Local Interpreter...**.
+4. Sélectionne **Existing** et va chercher : `chemin/vers/GAMEJAM/.venv/bin/python`
+5. Valide avec **OK**.
+
+---
+
+## 7. Lancer le jeu
+
+```bash
 python main.py
 ```
