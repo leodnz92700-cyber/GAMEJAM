@@ -24,7 +24,7 @@ from src.entities.textures import centered_box, load_single
 ITEM_TEXTURES = {
     C.ITEM_KEY: "item_key.png",
     C.ITEM_VIAL: "item_vial.png",
-    C.ITEM_TORCH: "item_torch.png",
+    C.ITEM_TORCH: "item_torch_unlit.png",
 }
 
 

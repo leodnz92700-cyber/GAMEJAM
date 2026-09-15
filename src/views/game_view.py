@@ -242,6 +242,7 @@ class GameView(arcade.View):
         self.monster_manager.reset()
         self.level.update_zone(*self.player.position)
         self._snap_camera()
+        self.zone_fade = C.ZONE_TRANSITION_DURATION * 8.0  # Animation de transition plus longue entre les étages
         self.hud.show_message(
             f"Etage {self.level_manager.floor_number}. La tour continue.", duration=3.0
         )
@@ -388,14 +389,30 @@ class GameView(arcade.View):
     def _draw_fades(self) -> None:
         """Voile noir : changement de zone et écran de mort."""
         alpha = 0
+        is_floor_transition = self.zone_fade > C.ZONE_TRANSITION_DURATION
+        duration = C.ZONE_TRANSITION_DURATION * 8.0 if is_floor_transition else C.ZONE_TRANSITION_DURATION
+        
         if self.zone_fade > 0:
             # Fondu symétrique : noir au milieu de la transition.
-            progress = self.zone_fade / C.ZONE_TRANSITION_DURATION
-            alpha = int(200 * (1.0 - abs(progress - 0.5) * 2))
+            progress = self.zone_fade / duration
+            alpha = int(255 * (1.0 - abs(progress - 0.5) * 2))
+            alpha = max(0, min(255, alpha))
+            
         if self.death_timer > 0:
             alpha = max(alpha, 235)
         if alpha <= 0:
             return
+            
         arcade.draw_lbwh_rectangle_filled(
             0, C.HUD_HEIGHT, C.WINDOW_WIDTH, C.VIEWPORT_HEIGHT, (0, 0, 0, alpha)
         )
+        
+        if is_floor_transition and alpha > 50:
+            arcade.draw_text(
+                f"ETAGE {self.level_manager.floor_number}",
+                C.WINDOW_WIDTH / 2, C.WINDOW_HEIGHT / 2 + C.HUD_HEIGHT / 2,
+                (200, 200, 200, alpha),
+                font_size=54,
+                anchor_x="center",
+                anchor_y="center"
+            )

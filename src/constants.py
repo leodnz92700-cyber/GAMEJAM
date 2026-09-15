@@ -51,7 +51,7 @@ ZONE_TRANSITION_DURATION = 0.22              # petit fondu au noir au changement
 PLAYER_SPEED = 185.0                  # pixels par seconde
 PLAYER_SPRITE_SCALE = 1.0
 INVENTORY_CAPACITY = 2                # inventaire volontairement étriqué
-INTERACTION_RADIUS = 46.0             # portée de la touche "interagir"
+INTERACTION_RADIUS = 75.0             # portée de la touche "interagir"
 
 # Les sprites du pack font 32x48 alors que les couloirs les plus étroits font
 # une seule tuile (32 px) : la boîte de collision est un petit rectangle centré,
@@ -59,7 +59,7 @@ INTERACTION_RADIUS = 46.0             # portée de la touche "interagir"
 # boîte au-delà de 32 px rendrait les couloirs étroits infranchissables —
 # `tools/walk_test.py` le détecte.
 PLAYER_FRAME_SIZE = (32, 48)
-PLAYER_HIT_BOX = (20, 16)
+PLAYER_HIT_BOX = (14, 12)
 # Le sprite est dessine plus haut que son point de collision, pour que les pieds
 # se posent au bord du couloir au lieu de s'enfoncer dans le mur d'en bas. Ce
 # sont alors la tete et les epaules qui debordent sur le mur du haut, ce qui est
@@ -91,8 +91,8 @@ MONSTER_FPS = 6.0
 # --------------------------------------------------------------------------- #
 # Aucun compte à rebours n'est affiché : ces durées ne servent qu'à déclencher
 # les signaux sonores. Le joueur doit apprendre à les lire.
-MONSTER_RELEASE_TIME = 48.0           # secondes avant que la bête soit lâchée
-MONSTER_SPEED = 165.0                 # légèrement plus lente que le joueur
+MONSTER_RELEASE_TIME = 32.0           # secondes avant que la bête soit lâchée
+MONSTER_SPEED = 205.0                 # légèrement plus lente que le joueur
 MONSTER_KILL_RADIUS = 26.0
 MONSTER_REPATH_INTERVAL = 0.45        # recalcul du chemin vers le joueur
 MONSTER_VISIBLE_RADIUS = 160.0        # au-delà, elle reste invisible

@@ -24,9 +24,11 @@ from src.ui.menu_components import Button, ButtonList, draw_hint, draw_title
 LORE = (
     "Tu te reveilles au pied d'une tour dont chaque etage est un labyrinthe sans "
     "lumiere. Tu ne sais pas comment tu es entre, seulement qu'il faut monter.\n\n"
-    "Tu trouveras des fioles. Bois-en une et tu meurs sur-le-champ : ton corps "
-    "reste la ou il tombe, il brille faiblement, et il garde ce que tu portais.\n\n"
-    "Quelque chose rode dans la tour. Tu ne la verras pas venir : tu l'entendras. "
+    "REGLES DU JEU :\n"
+    "E: Interagir (ramasser, fouiller, ouvrir)   F: Planter torche   R: Boire fiole\n\n"
+    "Bois une fiole et tu meurs sur-le-champ : ton corps reste la ou il tombe, "
+    "il brille faiblement, et il garde ce que tu portais.\n\n"
+    "Quelque chose rode dans la tour... "
     "Si elle te prend, il ne restera rien de toi."
 )
 

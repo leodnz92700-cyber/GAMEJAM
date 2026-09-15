@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="80" height="40" tilewidth="32" tileheight="32" infinite="0" nextlayerid="20" nextobjectid="32">
  <properties>
-  <property name="zone_cols" type="int" value="40"/>
-  <property name="zone_rows" type="int" value="20"/>
+  <property name="zone_cols" type="int" value="40" />
+  <property name="zone_rows" type="int" value="20" />
  </properties>
- <tileset firstgid="1" source="Tileset_Dungeon.tsx"/>
+ <tileset firstgid="1" source="Tileset_Dungeon.tsx" />
  <layer id="1" name="Floor" width="80" height="40">
   <data encoding="csv">
 17,38,26,26,26,15,17,15,27,16,26,38,38,15,15,15,16,28,17,41,28,26,29,16,38,39,28,16,41,41,38,14,39,39,26,26,14,28,39,16,38,26,40,26,38,28,26,41,40,29,28,26,26,39,41,15,39,40,14,17,26,26,38,38,17,41,16,16,27,26,26,26,28,15,16,15,26,15,39,27,
@@ -94,78 +94,78 @@
   </data>
  </layer>
  <objectgroup id="10" name="Spawn">
-  <object id="1" name="spawn" class="spawn" type="spawn" x="320" y="1120" width="32" height="32"/>
+  <object id="1" name="spawn" class="spawn" type="spawn" x="320" y="1120" width="32" height="32" />
  </objectgroup>
  <objectgroup id="11" name="Exit">
-  <object id="2" name="exit" class="exit" type="exit" x="2272" y="64" width="32" height="32"/>
+  <object id="2" name="exit" class="exit" type="exit" x="2272" y="64" width="32" height="32" />
  </objectgroup>
  <objectgroup id="12" name="Doors">
-  <object id="3" name="door_key" class="door_key" type="door_key" x="1248" y="448" width="32" height="32">
+  <object id="3" name="door_key" class="door_key" type="door_key" x="1600" y="320" width="32" height="32">
    <properties>
-    <property name="door_id" type="string" value="key_door_1"/>
-    <property name="key_id" type="string" value="key_1"/>
-    <property name="passage" type="string" value="horizontal"/>
+    <property name="door_id" type="string" value="key_door_1" />
+    <property name="key_id" type="string" value="key_1" />
+    <property name="passage" type="string" value="horizontal" />
    </properties>
   </object>
   <object id="4" name="door_plate" class="door_plate" type="door_plate" x="2272" y="352" width="32" height="32">
    <properties>
-    <property name="door_id" type="string" value="plate_door_1"/>
-    <property name="plate_id" type="string" value="plate_1"/>
-    <property name="passage" type="string" value="vertical"/>
+    <property name="door_id" type="string" value="plate_door_1" />
+    <property name="plate_id" type="string" value="plate_1" />
+    <property name="passage" type="string" value="vertical" />
    </properties>
   </object>
  </objectgroup>
  <objectgroup id="13" name="PressurePlates">
   <object id="5" name="pressure_plate" class="pressure_plate" type="pressure_plate" x="2272" y="416" width="32" height="32">
    <properties>
-    <property name="plate_id" type="string" value="plate_1"/>
-    <property name="door_id" type="string" value="plate_door_1"/>
+    <property name="plate_id" type="string" value="plate_1" />
+    <property name="door_id" type="string" value="plate_door_1" />
    </properties>
   </object>
  </objectgroup>
  <objectgroup id="14" name="Traps">
-  <object id="6" name="spike" class="spike" type="spike" x="672" y="800" width="32" height="32"/>
+  <object id="6" name="spike" class="spike" type="spike" x="672" y="896" width="32" height="32" />
   <object id="7" name="dart" class="dart" type="dart" x="672" y="768" width="32" height="32">
    <properties>
-    <property name="direction" type="string" value="down"/>
-    <property name="interval" type="float" value="1.9"/>
-    <property name="speed" type="float" value="250.0"/>
+    <property name="direction" type="string" value="down" />
+    <property name="interval" type="float" value="1.9" />
+    <property name="speed" type="float" value="250.0" />
    </properties>
   </object>
  </objectgroup>
  <objectgroup id="15" name="Items">
   <object id="8" name="vial" class="vial" type="vial" x="416" y="1120" width="32" height="32">
    <properties>
-    <property name="unique" type="bool" value="true"/>
+    <property name="unique" type="bool" value="true" />
    </properties>
   </object>
   <object id="9" name="key" class="key" type="key" x="192" y="128" width="32" height="32">
    <properties>
-    <property name="key_id" type="string" value="key_1"/>
+    <property name="key_id" type="string" value="key_1" />
    </properties>
   </object>
-  <object id="10" name="torch" class="torch" type="torch" x="320" y="960" width="32" height="32"/>
-  <object id="11" name="torch" class="torch" type="torch" x="640" y="800" width="32" height="32"/>
-  <object id="12" name="torch" class="torch" type="torch" x="928" y="608" width="32" height="32"/>
-  <object id="13" name="torch" class="torch" type="torch" x="1152" y="448" width="32" height="32"/>
-  <object id="14" name="torch" class="torch" type="torch" x="1312" y="448" width="32" height="32"/>
-  <object id="15" name="torch" class="torch" type="torch" x="1824" y="512" width="32" height="32"/>
-  <object id="16" name="torch" class="torch" type="torch" x="1984" y="512" width="32" height="32"/>
-  <object id="17" name="torch" class="torch" type="torch" x="2272" y="320" width="32" height="32"/>
-  <object id="18" name="torch" class="torch" type="torch" x="160" y="1056" width="32" height="32"/>
-  <object id="19" name="torch" class="torch" type="torch" x="448" y="1152" width="32" height="32"/>
-  <object id="20" name="torch" class="torch" type="torch" x="96" y="736" width="32" height="32"/>
-  <object id="21" name="torch" class="torch" type="torch" x="512" y="832" width="32" height="32"/>
-  <object id="22" name="torch" class="torch" type="torch" x="832" y="736" width="32" height="32"/>
-  <object id="23" name="torch" class="torch" type="torch" x="992" y="832" width="32" height="32"/>
-  <object id="24" name="torch" class="torch" type="torch" x="832" y="416" width="32" height="32"/>
-  <object id="25" name="torch" class="torch" type="torch" x="1024" y="480" width="32" height="32"/>
-  <object id="26" name="torch" class="torch" type="torch" x="1472" y="480" width="32" height="32"/>
-  <object id="27" name="torch" class="torch" type="torch" x="1696" y="512" width="32" height="32"/>
-  <object id="28" name="torch" class="torch" type="torch" x="2144" y="480" width="32" height="32"/>
-  <object id="29" name="torch" class="torch" type="torch" x="2240" y="512" width="32" height="32"/>
-  <object id="30" name="torch" class="torch" type="torch" x="2080" y="96" width="32" height="32"/>
-  <object id="31" name="torch" class="torch" type="torch" x="2432" y="192" width="32" height="32"/>
+  <object id="10" name="torch" class="torch" type="torch" x="320" y="960" width="32" height="32" />
+  <object id="11" name="torch" class="torch" type="torch" x="640" y="800" width="32" height="32" />
+  <object id="12" name="torch" class="torch" type="torch" x="928" y="608" width="32" height="32" />
+  <object id="13" name="torch" class="torch" type="torch" x="1152" y="448" width="32" height="32" />
+  <object id="14" name="torch" class="torch" type="torch" x="1312" y="448" width="32" height="32" />
+  <object id="15" name="torch" class="torch" type="torch" x="1824" y="512" width="32" height="32" />
+  <object id="16" name="torch" class="torch" type="torch" x="1984" y="512" width="32" height="32" />
+  <object id="17" name="torch" class="torch" type="torch" x="2272" y="320" width="32" height="32" />
+  <object id="18" name="torch" class="torch" type="torch" x="160" y="1056" width="32" height="32" />
+  <object id="19" name="torch" class="torch" type="torch" x="448" y="1152" width="32" height="32" />
+  <object id="20" name="torch" class="torch" type="torch" x="96" y="736" width="32" height="32" />
+  <object id="21" name="torch" class="torch" type="torch" x="512" y="832" width="32" height="32" />
+  <object id="22" name="torch" class="torch" type="torch" x="832" y="736" width="32" height="32" />
+  <object id="23" name="torch" class="torch" type="torch" x="992" y="832" width="32" height="32" />
+  <object id="24" name="torch" class="torch" type="torch" x="832" y="416" width="32" height="32" />
+  <object id="25" name="torch" class="torch" type="torch" x="1024" y="480" width="32" height="32" />
+  <object id="26" name="torch" class="torch" type="torch" x="1472" y="480" width="32" height="32" />
+  <object id="27" name="torch" class="torch" type="torch" x="1696" y="512" width="32" height="32" />
+  <object id="28" name="torch" class="torch" type="torch" x="2144" y="480" width="32" height="32" />
+  <object id="29" name="torch" class="torch" type="torch" x="2240" y="512" width="32" height="32" />
+  <object id="30" name="torch" class="torch" type="torch" x="2080" y="96" width="32" height="32" />
+  <object id="31" name="torch" class="torch" type="torch" x="2432" y="192" width="32" height="32" />
  </objectgroup>
  <objectgroup id="16" name="NPCs">
  </objectgroup>

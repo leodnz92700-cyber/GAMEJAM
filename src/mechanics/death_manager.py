@@ -43,13 +43,16 @@ class DeathManager:
     def kill(self, player, level, cause: str) -> DeathResult:
         """Tue le joueur et applique les conséquences liées à la cause."""
         carried = player.inventory.clear()
+        print(f"[DEBUG death_manager] cause={cause}, inventaire avant filtre: {[(i.type, i.properties) for i in carried]}")
         # La fiole est unique et ne se transmet jamais à un cadavre : elle
         # réapparaît à sa place d'origine (`level.restore_unique_items`).
         carried = [item for item in carried if item.type != C.ITEM_VIAL]
         leaves_corpse = cause in (C.DEATH_VIAL, C.DEATH_TRAP)
+        print(f"[DEBUG death_manager] après filtre fiole: {[(i.type, i.properties) for i in carried]}, leaves_corpse={leaves_corpse}")
 
         if leaves_corpse:
-            level.add_corpse(player.center_x, player.center_y, carried, cause)
+            corpse = level.add_corpse(player.center_x, player.center_y, carried, cause)
+            print(f"[DEBUG death_manager] cadavre créé avec {len(corpse.items)} items: {[(i.type, i.properties) for i in corpse.items]}")
             if cause == C.DEATH_VIAL:
                 message = "Tu bois la fiole. Ton corps restera ici, et ce qu'il porte avec."
                 self.audio.play("death_vial")
