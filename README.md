@@ -324,3 +324,146 @@ GAMEJAM/
     ├── entities/            <-- Les objets interactifs
     ├── mechanics/           <-- Moteurs logiques
     └── ui/                  <-- Éléments d'interface
+---
+
+# Labyrinth of Shadow — base technique
+
+Première version jouable : labyrinthe dans le noir, mort volontaire, cadavres
+persistants, créature qui traque. Tout est en place pour travailler à plusieurs
+en parallèle.
+
+## Lancer le jeu
+
+```bash
+python main.py
+```
+
+Options utiles pendant le développement :
+
+```bash
+python main.py --level 2                        # demarrer a l'etage 2
+python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sans menu
+```
+
+## Contrôles
+
+| Touche | Action |
+|--------|--------|
+| `Z` `Q` `S` `D` ou les flèches | se déplacer |
+| `E` | interagir : fouiller un cadavre, ramasser, ouvrir une porte, parler |
+| `F` | planter une torche (éclaire la zone définitivement) |
+| `R` | boire la fiole : mort volontaire |
+| `Échap` | retour au menu |
+
+## Ce qui fonctionne déjà
+
+- Vue de dessus, déplacement animé dans quatre directions, collisions avec les murs.
+- **Caméra fixe par zone** : un écran = une zone de 40x20 tuiles, la caméra
+  saute à la zone adjacente quand le joueur franchit une frontière (petit fondu).
+  Chaque étage fait 4 zones. Les frontières de zone sont des murs pleins, percés
+  d'un seul passage : là où l'on ne peut pas changer d'écran, il y a un mur.
+- **Couloirs étroits** (1 ou 2 tuiles) et quatre salles par zone, où trouver les
+  objets.
+- **Obscurité** : voile noir percé par un shader, halo autour du joueur, torches
+  plantées (lumière permanente qui vacille), cadavres (lueur froide qui pulse).
+- **Mort volontaire** (fiole, touche `R`) : laisse un cadavre lumineux qui
+  conserve l'inventaire. On peut le fouiller plus tard avec `E`.
+- **Une seule fiole par étage**, posée à quelques pas du départ. Elle réapparaît
+  toujours au même endroit après chaque mort, quelle qu'en soit la cause : on ne
+  peut donc jamais en stocker, mais on n'est jamais bloqué non plus.
+- **Beaucoup de torches** semées le long du chemin principal, assez pour
+  l'éclairer entièrement. Une torche plantée ne se ramasse plus. Une torche
+  encore dans le sac au moment d'une mort volontaire se retrouve sur le cadavre
+  et se récupère plus tard ; dévoré par la créature, on la perd avec le reste.
+- **Mort par piège** : même conséquence qu'une fiole. Le piège à pointes est
+  totalement invisible jusqu'à sa première victime — cette mort-là est
+  inévitable, c'est ainsi qu'on le découvre. Ensuite il reste visible et **bat
+  en continu** : les pointes sortent puis rentrent, et on traverse entre deux.
+  Il barre toute la largeur du couloir, donc il ne doit jamais rester mortel en
+  permanence, sinon le niveau devient infranchissable
+  (`tools/walk_test.py` le vérifie).
+- **Mort par la créature** : aucun cadavre, tous les objets perdus. Les objets
+  UNIQUES (la fiole, les clés) reviennent cependant là où le level design les
+  avait posés : sans cela, se faire dévorer en portant la clé détruirait le seul
+  exemplaire et rendrait l'étage définitivement infinissable. La punition reste
+  entière — il faut refaire tout le trajet pour aller la rechercher.
+- Un cadavre qui **porte encore des objets** brille plus fort et vire au doré :
+  dans le noir, c'est le seul moyen de retrouver ce qu'on a laissé derrière soi.
+- **Physique des cadavres** : ils maintiennent une plaque de pression enfoncée
+  (donc une porte ouverte) et bloquent les fléchettes, mais on marche dessus :
+  un cadavre ne condamne jamais un couloir.
+- **Créature** : lâchée après un délai fixe, jamais affiché. Elle s'annonce par
+  des sons (grondement lointain, grattements, pas qui courent) et par le
+  vacillement des torches, puis traque le joueur par le plus court chemin. Elle
+  n'est visible qu'à très courte distance.
+- **Objets** : clés, fioles, torches. Inventaire limité à 2 emplacements.
+- **Portes** : à clé (ouverture définitive) ou commandées par une plaque.
+- **Écrans** : accueil (lore, mode de jeu, tableau des scores local), sélection
+  d'étage, victoire et game over avec statistiques.
+- **Modes de jeu** : Exploration (libre), Sursis (8 morts max), Contre-la-montre
+  (5 minutes).
+
+## Où brancher vos ajouts (travail en parallèle)
+
+Chaque module est indépendant : tant que vous ne touchez qu'à vos fichiers, les
+conflits Git sont rares.
+
+| Vous voulez... | Fichier à ouvrir |
+|----------------|------------------|
+| équilibrer (vitesses, délais, rayons de lumière, modes) | `src/constants.py` |
+| dessiner les niveaux | `assets/maps/*.tmx` (Tiled) + `assets/maps/README.md` |
+| ajouter un type de piège | `src/environment/trap.py` |
+| ajouter un objet ramassable | `src/entities/items.py` + `src/mechanics/interaction_manager.py` |
+| faire vivre les PNJ | `src/entities/npc.py` (squelette prêt, aucun PNJ posé) |
+| changer le comportement de la créature | `src/mechanics/monster_manager.py` |
+| remplacer les sons | déposer vos fichiers dans `assets/audio/` sous les mêmes noms (voir `audio_manager.py`) |
+| changer de sprites | `tools/import_pack_assets.py` (le jeu ne lit que `assets/sprites/`) |
+| retoucher le HUD ou les menus | `src/ui/` |
+| modifier la boucle de jeu | `src/views/game_view.py` |
+
+Règle de game design à ne pas casser : **aucun compte à rebours ne doit être
+affiché** pour la créature. Le joueur ne dispose que du son et de la lumière.
+
+## Outils
+
+```bash
+python tools/import_pack_assets.py       # importe les sprites du pack Dungeons & Pixels
+python tools/gen_placeholder_assets.py   # regenere les sons et le degrade de lumiere
+python tools/gen_placeholder_maps.py     # regenere les cartes (ECRASE les .tmx !)
+python tools/check_levels.py             # verifie que chaque niveau est terminable
+python tools/walk_test.py                # traverse chaque niveau avec le vrai moteur de collisions
+python tools/smoke_test.py /tmp/shots    # joue un scenario scripte et enregistre des captures
+```
+
+Après une modification de carte, lancez `check_levels.py` (cohérence : sortie
+atteignable, clé pas enfermée, fiole unique, assez de torches) **et**
+`walk_test.py` (praticabilité réelle : couloirs assez larges, passages ouverts).
+Avant de pousser, lancez `smoke_test.py` : il rejoue une partie complète et
+échoue si une mécanique est cassée.
+
+## Assets
+
+Les **sprites** viennent du pack pixel art *Dungeons & Pixels* (32x32), placé
+dans `map/dungeonsAndPixels/`. Le jeu ne lit jamais ce dossier directement :
+`tools/import_pack_assets.py` recopie ce dont on a besoin dans `assets/sprites/`
+et `assets/maps/` sous les noms attendus par le code. Pour changer de pack ou de
+personnage, c'est le seul fichier à modifier.
+
+Les **sons** sont encore des placeholders de synthèse générés en Python. Déposez
+vos vrais fichiers dans `assets/audio/` sous les mêmes noms (voir
+`src/mechanics/audio_manager.py`) et ne relancez plus le générateur.
+
+Attention si vous changez les sprites de personnages : leur boîte de collision
+est un petit rectangle centré, pas la taille de l'image. Le héros fait 32x48
+alors que les couloirs les plus étroits font 32 px de large. Après tout
+changement de sprite, relancez `python tools/walk_test.py`.
+
+## Pas encore fait
+
+- Les PNJ existent en tant que classe mais aucun n'est posé dans les cartes.
+- La créature ne dévore pas les cadavres (le pitch l'évoque) : à ajouter dans
+  `monster_manager` si vous voulez punir l'accumulation de dépouilles.
+- Pas de mémoire des zones explorées (la carte ne reste pas partiellement
+  visible après la mort) : `lighting_engine` est l'endroit pour l'ajouter.
+- Les sons sont encore des placeholders de synthèse.
+- Pas d'animation de mort ni d'attaque (le pack en fournit pourtant).

@@ -1,0 +1,23 @@
+Update v1.4 — Skull
+
+Added new enemy: Skull
+
+Update v1.3 — Blue Slime
+
+Added new enemy: Blue Slime
+
+Update v1.2 — Water & Lava
+
+Added Animated Water Tiles
+
+Added Animated Lava Tiles
+
+Update v1.1 — Skeleton Mage
+
+Added new enemy: Skeleton Mage
+
+Idle, Attack, Movement, and Death animations included
+
+Comes with a static shadow sprite
+
+Balanced to match existing skeleton enemies
