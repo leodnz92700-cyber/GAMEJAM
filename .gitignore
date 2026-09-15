@@ -1,0 +1,29 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Byte-compiled / cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# PyCharm / JetBrains
+.idea/
+
+# VS Code (si utilisation ponctuelle)
+.vscode/
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Distribution / Packaging (au cas où)
+build/
+dist/
+*.egg-info/
+
+# Logs et profils
+*.log
