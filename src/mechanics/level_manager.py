@@ -43,6 +43,10 @@ class Level:
         # --- Listes de sprites, dans l'ordre de dessin --------------------- #
         self.floor_list = loaded_map.floor_list
         self.wall_list = loaded_map.wall_list
+        # Calques de decoration (voir map_loader.LoadedMap) : purement
+        # visuels, jamais interroges par la logique de jeu.
+        self.shadow_list = loaded_map.shadow_list
+        self.props_list = loaded_map.props_list
         self.exit_list = arcade.SpriteList()
         self.plate_list = arcade.SpriteList()
         self.trap_list = arcade.SpriteList()

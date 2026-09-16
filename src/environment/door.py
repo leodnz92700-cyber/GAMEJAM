@@ -23,27 +23,38 @@ from __future__ import annotations
 import arcade
 
 from src import constants as C
-from src.entities.textures import load_single
+from src.entities.textures import art_offset, load_single
 
-# (texture fermée, texture ouverte, décalage vertical du sprite par rapport à
-# la tuile de passage). Les portes de face sont hautes de 48 px : on les remonte
-# de 8 px pour que leur base coïncide avec la tuile.
+# (texture fermée, texture ouverte). Le décalage à appliquer pour recaler le
+# sprite sur sa tuile n'est PLUS un nombre choisi à l'oeil : il est calculé à
+# partir du vrai dessin de chaque PNG par `art_offset` (voir `textures.py`),
+# parce que le pack laisse du canvas transparent autour de certains dessins
+# (ex. de la marge sous la porte de face) que l'ancien magic number ne
+# prenait pas en compte -- d'où le décalage visible à côté des murs.
 DOOR_ART = {
-    "vertical": ("door_front_closed.png", "door_front_open.png", 8.0),
-    "horizontal": ("door_side_closed.png", "door_side_open.png", 0.0),
+    "vertical": ("door_front_closed.png", "door_front_open.png"),
+    "horizontal": ("door_side_closed.png", "door_side_open.png"),
 }
 
 
-def _passage_hit_box(texture_width: int, texture_height: int,
-                     offset_y: float) -> tuple:
-    """Boîte de collision réduite à la tuile de passage, sous le sprite."""
+def _passage_hit_box(offset_x: float, offset_y: float) -> tuple:
+    """
+    Boîte de collision réduite à la tuile de passage, sous le sprite.
+
+    Compense TOUJOURS exactement `offset_x`/`offset_y` (le décalage cosmétique
+    du dessin, voir `art_offset`) : quel que soit le décalage donné au sprite
+    pour recaler son dessin sur la tuile, la boîte de collision, elle, reste
+    pile sur la tuile en coordonnées monde. Le dessin peut bouger, la logique
+    de jeu ne voit jamais ce décalage.
+    """
     half = C.TILE_SIZE / 2
+    center_x = -offset_x
     center_y = -offset_y
     return (
-        (-half, center_y - half),
-        (half, center_y - half),
-        (half, center_y + half),
-        (-half, center_y + half),
+        (center_x - half, center_y - half),
+        (center_x + half, center_y - half),
+        (center_x + half, center_y + half),
+        (center_x - half, center_y + half),
     )
 
 
@@ -53,15 +64,19 @@ class Door(arcade.Sprite):
     def __init__(self, center_x: float, center_y: float, door_id: str,
                  key_id: str | None = None, plate_id: str | None = None,
                  passage: str = "vertical"):
-        closed_name, open_name, offset_y = DOOR_ART.get(passage, DOOR_ART["vertical"])
-        probe = load_single(closed_name)
-        hit_box = _passage_hit_box(probe.width, probe.height, offset_y)
+        closed_name, open_name = DOOR_ART.get(passage, DOOR_ART["vertical"])
+        # Calé sur le dessin de la texture FERMÉE : c'est elle qui définit la
+        # position de repos de la porte. La texture ouverte partage le même
+        # décalage -- son propre dessin peut occuper une zone différente du
+        # canvas (le battant qui pivote), c'est attendu.
+        offset_x, offset_y = art_offset(closed_name)
+        hit_box = _passage_hit_box(offset_x, offset_y)
 
         self.texture_closed = load_single(closed_name, hit_box)
         self.texture_open = load_single(open_name, hit_box)
         super().__init__(
             self.texture_closed,
-            center_x=center_x,
+            center_x=center_x + offset_x,
             center_y=center_y + offset_y,
         )
 

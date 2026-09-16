@@ -392,10 +392,16 @@ class GameView(arcade.View):
         """
         level = self.level
         level.floor_list.draw(pixelated=True)
+        # Ombres peintes sous les decors (calque Tiled optionnel
+        # "Shadow_layer") : juste au-dessus du sol, jamais de collision.
+        level.shadow_list.draw(pixelated=True)
         level.exit_list.draw(pixelated=True)
         level.plate_list.draw(pixelated=True)
         level.trap_list.draw(pixelated=True)
         level.wall_list.draw(pixelated=True)
+        # Decors poses par-dessus les murs (calque Tiled optionnel
+        # "Props_layer") : purement visuel, meme ordre que dans Tiled.
+        level.props_list.draw(pixelated=True)
         level.corpse_list.draw(pixelated=True)
         level.torch_list.draw(pixelated=True)
         level.item_list.draw(pixelated=True)
