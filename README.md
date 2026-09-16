@@ -502,7 +502,7 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
   des sons (grondement lointain, grattements, pas qui courent) et par le
   vacillement des torches, puis traque le joueur par le plus court chemin. Elle
   n'est visible qu'à très courte distance.
-- **Objets** : clés, fioles, torches. Inventaire limité à 2 emplacements.
+- **Objets** : clés, fioles, torches. Inventaire limité à 3 emplacements.
 - **Portes** : à clé (ouverture définitive) ou commandées par une plaque.
 - **Un seul niveau** : atteindre la sortie gagne la partie. Il n'y a ni
   ascension d'étages ni écran de sélection.

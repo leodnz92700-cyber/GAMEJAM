@@ -60,7 +60,7 @@ ZONE_TRANSITION_DURATION = 0.22              # petit fondu au noir au changement
 # --------------------------------------------------------------------------- #
 PLAYER_SPEED = 185.0                  # pixels par seconde
 PLAYER_SPRITE_SCALE = 1.0
-INVENTORY_CAPACITY = 2                # inventaire volontairement étriqué
+INVENTORY_CAPACITY = 3                # inventaire volontairement étriqué
 INTERACTION_RADIUS = 46.0             # portée de la touche "interagir"
 
 # Les sprites du pack font 32x48 alors que les couloirs les plus étroits font
