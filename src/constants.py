@@ -238,17 +238,19 @@ UI_ROW_HEIGHT = 30                    # hauteur d'une ligne de rappel de touche
 ITEM_KEY = "key"
 ITEM_VIAL = "vial"
 ITEM_TORCH = "torch"
+ITEM_SHIELD = "shield"
 
 # Objets UNIQUES et indispensables : s'ils disparaissent du niveau (bus, ou
 # detruits avec le joueur par la creature), ils reviennent a l'endroit exact ou
 # ils avaient ete poses par le level design. Sans cela, se faire devorer en
 # portant la cle rendrait l'etage definitivement infinissable.
-RESPAWNING_ITEM_TYPES = (ITEM_VIAL, ITEM_KEY)
+RESPAWNING_ITEM_TYPES = (ITEM_VIAL, ITEM_KEY, ITEM_SHIELD)
 
 ITEM_LABELS = {
     ITEM_KEY: "Cle",
     ITEM_VIAL: "Fiole",
     ITEM_TORCH: "Torche",
+    ITEM_SHIELD: "Bouclier",
 }
 
 # Même objet, mais tourné pour entrer dans une phrase : "Ramasser la fiole",
@@ -257,6 +259,7 @@ ITEM_PHRASES = {
     ITEM_KEY: "la cle",
     ITEM_VIAL: "la fiole",
     ITEM_TORCH: "la torche",
+    ITEM_SHIELD: "le bouclier",
 }
 
 # --------------------------------------------------------------------------- #

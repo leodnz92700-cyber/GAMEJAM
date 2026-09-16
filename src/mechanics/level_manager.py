@@ -57,6 +57,7 @@ class Level:
         self.archer_list = arcade.SpriteList()
         self.arrow_list = arcade.SpriteList()
         self.npc_list = arcade.SpriteList()
+        self.dead_npcs = []
 
         self.doors_by_id: dict[str, Door] = {}
         # Emplacement d'origine des objets uniques (fiole, clés) : ils
@@ -93,7 +94,7 @@ class Level:
                 self.exit_list.append(sprite)
                 self.exit_rect = map_object.position
 
-            elif kind in ("key", "vial", "torch"):
+            elif kind in ("key", "vial", "torch", "shield"):
                 self.item_list.append(
                     ItemSprite(make_item_from_map_object(map_object), *map_object.position)
                 )
@@ -120,13 +121,13 @@ class Level:
 
             elif kind == "npc":
                 lines = str(map_object.properties.get("lines", "...")).split("|")
-                self.npc_list.append(
-                    NPC(
-                        *map_object.position,
-                        lines=lines,
-                        wants_item=map_object.properties.get("wants_item"),
-                    )
+                npc = NPC(
+                    *map_object.position,
+                    lines=lines,
+                    wants_item=map_object.properties.get("wants_item"),
                 )
+                npc.properties = map_object.properties
+                self.npc_list.append(npc)
 
     # ------------------------------------------------------------------ #
     # Zones (caméra fixe, changement d'écran aux frontières)
@@ -267,6 +268,18 @@ class Level:
                 continue
             self.item_list.append(ItemSprite(Item(item_type, dict(properties)), x, y))
             restored.append(item_type)
+            
+        # Reset satisfied NPCs if their key was devoured
+        for npc in self.npc_list:
+            if not getattr(npc, "wants_item", None) or not npc.satisfied:
+                continue
+            key_id = getattr(npc, "properties", {}).get("key_id")
+            if not self._unique_item_exists(C.ITEM_KEY, {"key_id": key_id}, player):
+                npc.satisfied = False
+                npc.lines = str(getattr(npc, "properties", {}).get("lines", "...")).split("|")
+                npc.line_index = 0
+                restored.append(C.ITEM_KEY)
+        
         return restored
 
     def add_corpse(self, x: float, y: float, cause: str) -> Corpse:

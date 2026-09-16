@@ -136,7 +136,12 @@ class InteractionManager:
         # 3. Parler à un PNJ.
         npc = _nearest(level.npc_list, x, y, radius + 12)
         if npc is not None:
-            return InteractionTarget(kind="npc", sprite=npc, prompt="Parler")
+            prompt = "Parler"
+            if npc.wants_item and not npc.satisfied:
+                item_name = C.ITEM_PHRASES.get(npc.wants_item, npc.wants_item)
+                if player.inventory.find(npc.wants_item):
+                    prompt = f"Donner {item_name}"
+            return InteractionTarget(kind="npc", sprite=npc, prompt=prompt)
 
         return None
 
@@ -152,7 +157,34 @@ class InteractionManager:
             return self._pick_up(player, target.sprite)
         if target.kind == "door":
             return self._open_door(player, level, target.sprite)
-        return target.sprite.next_line()
+            
+        npc = target.sprite
+        if npc.wants_item and not npc.satisfied:
+            item = player.inventory.find(npc.wants_item)
+            if item is None:
+                return npc.next_line()
+            player.inventory.remove(item)
+            npc.satisfied = True
+            
+            # Create the key
+            key_id = getattr(npc, "properties", {}).get("key_id")
+            key_item = Item(C.ITEM_KEY, {"key_id": key_id} if key_id else {})
+            from src.entities.items import ItemSprite
+            
+            # NPC change de dialogue pour remercier le joueur
+            npc.lines = ["Merci pour mon bouclier !", "Tiens, prends cette cle en echange.", "Fais attention a toi..."]
+            npc.line_index = 0
+            
+            if not player.inventory.is_full:
+                player.pick_up(key_item)
+                self.audio.play("pickup")
+                return npc.next_line()
+            else:
+                sprite = ItemSprite(key_item, npc.center_x, npc.center_y - 20)
+                level.item_list.append(sprite)
+                return npc.next_line()
+                
+        return npc.next_line()
 
     def _pick_up(self, player, item_sprite) -> str:
         item = item_sprite.item
