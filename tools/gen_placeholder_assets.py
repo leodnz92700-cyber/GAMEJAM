@@ -45,15 +45,6 @@ TILESET_COLORS = [
 # --------------------------------------------------------------------------- #
 # Sprites non fournis par le pack graphique
 # --------------------------------------------------------------------------- #
-def make_dart() -> None:
-    """Petit carreau d'arbalete : le pack n'en fournit pas."""
-    img = Image.new("RGBA", (12, 16), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    draw.polygon([(6, 0), (10, 6), (2, 6)], fill=(225, 228, 235, 255))
-    draw.rectangle([5, 5, 6, 14], fill=(120, 90, 60, 255))
-    img.save(SPRITES / "dart.png")
-
-
 def make_light_gradient(size: int = 512) -> None:
     """
     Dégradé radial utilisé par le moteur de lumière pour la passe de lueur.
@@ -219,7 +210,6 @@ def make_sounds() -> None:
 def main() -> None:
     for folder in (SPRITES, AUDIO, MAPS):
         folder.mkdir(parents=True, exist_ok=True)
-    make_dart()
     make_light_gradient()
     make_sounds()
     print(f"Assets placeholder générés dans {SPRITES} et {AUDIO}")

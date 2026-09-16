@@ -18,7 +18,7 @@ Convention Tiled attendue :
   - calque de tuiles "Walls" : les murs (collisions)
   - calques d'objets : "Spawn", "Exit", "Doors", "PressurePlates", "Traps",
     "Items", "NPCs" — la CLASSE de l'objet Tiled donne son type
-    (spawn, exit, key, vial, torch, spike, dart, pressure_plate,
+    (spawn, exit, key, vial, torch, spike, archer, pressure_plate,
      door_key, door_plate, npc).
 """
 from __future__ import annotations

@@ -359,7 +359,8 @@ GAMEJAM/
 │       ├── plate_strip.png          # [Tom] Plaque relevée / enfoncée
 │       ├── door_front/side_*.png    # [Tom] Portes de face et de profil
 │       ├── exit.png                 # [Tom] Escalier vers l'étage suivant
-│       ├── trap_dart.png, dart.png  # [Tom] Piège à fléchettes
+│       ├── archer_idle/shoot_*.png  # [Tom] Squelette archer, repos et tir
+│       ├── arrow.png                # [Tom] Sa flèche
 │       └── light_gradient.png       # [Léo] Dégradé radial du moteur de lumière
 │
 ├── data/
@@ -380,7 +381,7 @@ GAMEJAM/
     │   ├── door.py                  # [Melvin] Portes à clé et à plaque, de face ou de profil
     │   ├── pressure_plate.py        # [Melvin] Plaques tenues par le joueur ou par un cadavre
     │   ├── torch.py                 # [Erwan] Torches plantées, flamme animée, vacille selon la tension
-    │   └── trap.py                  # [Inès] Pointes cycliques visibles + piège à fléchettes
+    │   └── trap.py                  # [Inès] Pointes cycliques visibles + squelette archer
     │
     ├── mechanics/
     │   ├── audio_manager.py         # [Léo] NOUVEAU — point d'entrée unique du son, paliers de tension
@@ -456,7 +457,7 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
 - **Mort volontaire** (fiole, touche `R`) : le héros s'effondre à l'écran, et le
   corps qui reste est littéralement la dernière image de cette animation. C'est
   donc bien son cadavre qui éclaire la zone, maintient les plaques de pression
-  et arrête les fléchettes.
+  et arrête les flèches.
 - **Les affaires tombent au sol autour du corps** : il n'y a rien à fouiller, on
   les ramasse comme n'importe quel objet. Elles n'émettent aucune lumière — ce
   sont la lueur du cadavre et les torches plantées qui les rendent visibles.
@@ -473,6 +474,16 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
   barre toute la largeur du couloir, donc il ne doit jamais rester mortel en
   permanence, sinon le niveau devient infranchissable
   (`tools/walk_test.py` le vérifie).
+- **Le squelette archer** : un tireur planté dans une grande salle du chemin,
+  qu'on ne peut ni tuer ni contourner. Il décoche une flèche toutes les 0,3 s en
+  travers de la pièce, entre les deux ouvertures que le joueur doit emprunter :
+  la fenêtre de passage existe, mais elle est si courte qu'on ne la trouve pas
+  dans le noir — la première traversée se paie d'une mort, et c'est voulu.
+  **Il ne s'arrête jamais de tirer, même une fois le joueur tué** : c'est le
+  corps laissé en travers de la trajectoire qui arrête les flèches, et qui ouvre
+  le passage pour les vies suivantes. Les flèches ont une portée d'environ
+  9 tuiles, pour que le danger reste dans la salle de l'archer et qu'on ne
+  meure jamais d'un tir venu d'un endroit qu'on n'a pas vu.
 - **Mort par la créature** : sa gueule remplit l'écran (jumpscare) avant la vie
   suivante. Aucun cadavre, tous les objets perdus. Les objets
   UNIQUES (la fiole, les clés) reviennent cependant là où le level design les
@@ -480,7 +491,7 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
   exemplaire et rendrait l'étage définitivement infinissable. La punition reste
   entière — il faut refaire tout le trajet pour aller la rechercher.
 - **Physique des cadavres** : ils maintiennent une plaque de pression enfoncée
-  (donc une porte ouverte) et bloquent les fléchettes, mais on marche dessus :
+  (donc une porte ouverte) et bloquent les flèches, mais on marche dessus :
   un cadavre ne condamne jamais un couloir.
 - **Créature** : lâchée après un délai fixe, jamais affiché. Elle s'annonce par
   des sons (grondement lointain, grattements, pas qui courent) et par le

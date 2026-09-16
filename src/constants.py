@@ -150,9 +150,25 @@ FLICKER_PANIC_AMPLITUDE = 0.26        # vacillement quand la créature approche
 # --------------------------------------------------------------------------- #
 # Environnement
 # --------------------------------------------------------------------------- #
-DART_DEFAULT_INTERVAL = 1.8           # secondes entre deux tirs
-DART_DEFAULT_SPEED = 260.0
-DART_LIFETIME = 6.0
+# --- Le squelette archer ---------------------------------------------------- #
+# Ce n'est plus une grille percée dans un mur mais un TIREUR : un squelette
+# planté dans une grande salle, qui décoche ses flèches en travers de la pièce.
+# On ne peut pas le tuer, on ne peut pas le contourner : il fait partie du décor,
+# comme un piège. La seule parade est le CADAVRE, qui arrête les flèches.
+#
+# La cadence est volontairement infernale : une flèche toutes les 0,30 s, deux
+# fois plus rapides que le joueur. La fenêtre pour traverser la ligne de tir
+# existe, mais elle est si courte qu'on ne la trouve pas à l'aveugle : la
+# première traversée se paie d'une mort, et c'est voulu. Poser son corps en
+# travers de la trajectoire est la vraie réponse — pas un contournement.
+ARCHER_DEFAULT_INTERVAL = 0.30        # secondes entre deux flèches
+ARCHER_DEFAULT_SPEED = 330.0          # pixels par seconde (le joueur en fait 185)
+ARCHER_SHOOT_ANIMATION = 0.26         # geste de tir, plus court que la cadence
+ARCHER_RELEASE_FRAME = 5              # image où l'arc se détend (bande de tir : 6 images)
+ARCHER_FRAME_SIZE = (32, 48)        # bandes du pack : 4 images au repos, 6 au tir
+ARROW_RANGE = 9 * TILE_SIZE           # la flèche finit sa course : le danger reste dans la salle
+ARROW_LIFETIME = 6.0                  # sécurité : une flèche perdue finit par disparaître
+ARROW_HIT_BOX = (12, 6)               # petite boîte : c'est la pointe qui tue
 
 # --------------------------------------------------------------------------- #
 # Modes de jeu (écran d'accueil)
@@ -248,4 +264,5 @@ ITEM_PHRASES = {
 # --------------------------------------------------------------------------- #
 DEATH_VIAL = "vial"          # mort volontaire : cadavre + inventaire conserves
 DEATH_TRAP = "trap"          # mort par piege : cadavre + inventaire conserves
+DEATH_ARROW = "arrow"        # fleche de l'archer : mêmes conséquences qu'un piege
 DEATH_DEVOURED = "devoured"  # mort par la creature : aucun cadavre, tout est perdu

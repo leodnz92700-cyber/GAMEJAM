@@ -64,18 +64,24 @@ class Runner:
             (193, "verifier la fiole unique", self.check_vial_respawn),
             (195, "teleporter sur le piege", self.teleport_to_spike),
             (215, "mort par piege", lambda view: self.shot("07_piege")),
-            (285, "liberer la creature", self.release_monster),
-            (291, "creature lachee", lambda view: self.shot("08_creature")),
-            (293, "verifier la creature", self.check_monster),
-            (295, "prendre la cle", self.take_key),
-            (297, "se faire devorer avec la cle", self.feed_to_monster),
-            (330, "jumpscare", lambda view: self.shot("09_screamer")),
-            (332, "verifier le jumpscare", self.check_screamer),
-            (395, "verifier le retour de la cle", self.check_key_restored),
-            (397, "changer de zone", self.teleport_next_zone),
-            (415, "zone suivante", lambda view: self.shot("10_zone")),
-            (417, "verifier le changement de zone", self.check_zone),
-            (419, "fin", lambda view: arcade.close_window()),
+            (290, "se poser dans la ligne de tir de l'archer", self.enter_arrow_line),
+            (302, "l'archer tire", lambda view: self.shot("08_archer")),
+            (400, "verifier la mort par fleche", self.check_arrow_death),
+            (402, "le corps est reste dans la ligne de tir", lambda view: self.shot("09_bouclier")),
+            (404, "relever les tirs de l'archer", self.watch_archer),
+            (440, "l'archer tire toujours, le corps encaisse", self.check_corpse_shields),
+            (465, "liberer la creature", self.release_monster),
+            (471, "creature lachee", lambda view: self.shot("10_creature")),
+            (473, "verifier la creature", self.check_monster),
+            (475, "prendre la cle", self.take_key),
+            (477, "se faire devorer avec la cle", self.feed_to_monster),
+            (510, "jumpscare", lambda view: self.shot("11_screamer")),
+            (512, "verifier le jumpscare", self.check_screamer),
+            (575, "verifier le retour de la cle", self.check_key_restored),
+            (577, "changer de zone", self.teleport_next_zone),
+            (595, "zone suivante", lambda view: self.shot("12_zone")),
+            (597, "verifier le changement de zone", self.check_zone),
+            (599, "fin", lambda view: arcade.close_window()),
         ]
 
     # ---------------------------------------------------------------- #
@@ -164,6 +170,75 @@ class Runner:
         # sinon le piege serait inoffensif au moment de la teleportation.
         view.level.clock = C.SPIKE_SAFE_DURATION + 0.2
 
+    def archer(self, view):
+        archers = view.level.archer_list
+        if not archers:
+            self.errors.append("aucun squelette archer dans la carte")
+            return None
+        return archers[0]
+
+    def enter_arrow_line(self, view) -> None:
+        """
+        Plante le joueur en travers de la ligne de tir, a quelques tuiles devant.
+
+        C'est la situation que le niveau impose reellement : la ligne de fleches
+        coupe le passage entre les deux ouvertures de la salle.
+        """
+        archer = self.archer(view)
+        if archer is None:
+            return
+        dx, dy = archer.direction
+        view.player.position = (
+            archer.center_x + dx * C.TILE_SIZE * 3,
+            archer.center_y + dy * C.TILE_SIZE * 3,
+        )
+
+    def check_arrow_death(self, view) -> None:
+        """Une fleche tue, et cette mort laisse un corps (contrairement a la bete)."""
+        if view.score.stats.deaths_by_trap < 2:
+            self.errors.append(
+                "l'archer n'a pas tue le joueur plante dans sa ligne de tir "
+                f"(morts par piege : {view.score.stats.deaths_by_trap})"
+            )
+
+    def watch_archer(self, view) -> None:
+        """Releve l'etat de l'archer et du corps, pour comparaison juste apres."""
+        archer = self.archer(view)
+        self.shots_before = archer.shots_fired if archer else 0
+        corpses = view.level.corpse_list
+        self.shield_corpse = corpses[-1] if corpses else None
+        if self.shield_corpse is None:
+            self.errors.append("la mort par fleche n'a laisse aucun cadavre")
+
+    def check_corpse_shields(self, view) -> None:
+        """
+        Le coeur de la mecanique : l'archer ne s'arrete JAMAIS, mais le corps
+        laisse sur la trajectoire encaisse les fleches a la place du joueur.
+        """
+        archer = self.archer(view)
+        if archer is None or self.shield_corpse is None:
+            return
+        if archer.shots_fired <= self.shots_before:
+            self.errors.append("l'archer a cesse de tirer apres avoir tue le joueur")
+
+        dx, dy = archer.direction
+        # Distance parcourue par chaque fleche encore en vol, le long de l'axe de
+        # tir : aucune ne doit avoir depasse le corps.
+        corpse_distance = (
+            (self.shield_corpse.center_x - archer.center_x) * dx
+            + (self.shield_corpse.center_y - archer.center_y) * dy
+        )
+        for arrow in view.level.arrow_list:
+            distance = (
+                (arrow.center_x - archer.center_x) * dx
+                + (arrow.center_y - archer.center_y) * dy
+            )
+            if distance > corpse_distance + C.TILE_SIZE:
+                self.errors.append(
+                    "une fleche a traverse le cadavre : le corps ne fait plus bouclier"
+                )
+                return
+
     def release_monster(self, view) -> None:
         view.monster_manager.elapsed = C.MONSTER_RELEASE_TIME + 0.1
 
@@ -171,7 +246,8 @@ class Runner:
         if view.monster_manager.monster is None:
             self.errors.append("la creature n'a pas ete liberee")
         deaths = view.score.stats
-        if deaths.deaths_by_vial != 1 or deaths.deaths_by_trap != 1:
+        # Deux morts "piege" : les pointes, puis la fleche de l'archer.
+        if deaths.deaths_by_vial != 1 or deaths.deaths_by_trap != 2:
             self.errors.append(
                 f"stats de mort inattendues : fiole={deaths.deaths_by_vial} "
                 f"piege={deaths.deaths_by_trap}"

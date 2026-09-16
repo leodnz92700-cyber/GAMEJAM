@@ -47,7 +47,7 @@ tuiles avec des pièges, posez deux objets côte à côte.
 | `Doors`           | `door_plate`      | `door_id`, `plate_id`, `passage`                      |
 | `PressurePlates`  | `pressure_plate`  | `plate_id`, `door_id` (la porte commandée)             |
 | `Traps`           | `spike`           | visible et cyclique (voir plus bas)                   |
-| `Traps`           | `dart`            | `direction` (up/down/left/right), `interval`, `speed` |
+| `Traps`           | `archer`          | `direction` (up/down/left/right), `interval`, `speed` |
 | `NPCs`            | `npc`             | `lines` (répliques séparées par `\|`), `wants_item`    |
 
 `passage` vaut `horizontal` (le joueur traverse la porte en allant à gauche ou à

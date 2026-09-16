@@ -29,8 +29,10 @@ modifiez `tools/import_pack_assets.py` et rien d'autre.
 | `door_side_{closed,open}.png`        | 64x64              | `environment/door.py`        |
 | `item_{key,vial,torch}.png`          | 32x32              | `entities/items.py`          |
 | `exit.png`                           | 32x64 (escalier)   | `mechanics/level_manager.py` |
-| `trap_dart.png`                      | 32x32              | `environment/trap.py`        |
-| `dart.png`, `light_gradient.png`     | générés            | `tools/gen_placeholder_assets.py` |
+| `archer_idle_{down,side,up}.png`     | bande de 32x48     | `environment/trap.py`        |
+| `archer_shoot_{down,side,up}.png`    | bande de 32x48     | `environment/trap.py`        |
+| `arrow.png`                          | 24x8, pointe à droite | `environment/trap.py`     |
+| `light_gradient.png`                 | généré             | `tools/gen_placeholder_assets.py` |
 
 La marche vers la gauche n'existe pas dans le pack : le code retourne la bande
 "profil" (voir `entities/textures.py`).

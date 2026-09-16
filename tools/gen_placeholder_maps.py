@@ -16,6 +16,8 @@ Structure produite :
   - une seule fiole, posée à quelques pas du départ ;
   - beaucoup de torches réparties le long du chemin principal, assez pour
     l'éclairer entièrement si le joueur les plante toutes ;
+  - un squelette archer planté dans une grande salle du chemin, qui balaie la
+    pièce de flèches entre les deux ouvertures que le joueur doit emprunter ;
   - les plaques de pression sont posées dans le couloir juste avant la porte
     qu'elles commandent : le joueur voit tout de suite le rapport de cause à
     effet, et comprend qu'il doit mourir dessus.
@@ -422,8 +424,8 @@ def build_level(seed: int) -> tuple[list[list[str]], list[dict]]:
             elif grid[spike_row + offset][spike_col] == FLOOR:
                 add("Traps", "spike", spike_col, spike_row + offset)
 
-    # --- Piège à fléchettes : dans une ligne droite horizontale -------------- #
-    _place_dart_trap(grid, path_corridors, rooms, add)
+    # --- Squelette archer : dans une grande salle du chemin ------------------ #
+    _place_archer(path_rooms, path_corridors, rooms, add)
 
     # --- Torches : assez pour éclairer tout le chemin principal -------------- #
     reserved = {
@@ -436,25 +438,70 @@ def build_level(seed: int) -> tuple[list[list[str]], list[dict]]:
     return grid, objects
 
 
-def _place_dart_trap(grid, path_corridors, rooms, add) -> None:
-    """Pose un émetteur dans le mur au-dessus d'un long couloir horizontal."""
-    for corridor in path_corridors:
-        outside = corridor.outside_spine(rooms)
-        run: list[tuple[int, int]] = []
-        for tile in outside:
-            if run and tile[1] == run[-1][1] and tile[0] == run[-1][0] + 1:
-                run.append(tile)
-            else:
-                run = [tile]
-            if len(run) >= 6:
-                col, row = run[len(run) // 2]
-                emitter_row = row - 1
-                while emitter_row > 1 and grid[emitter_row][col] != WALL:
-                    emitter_row -= 1
-                if grid[emitter_row][col] == WALL:
-                    add("Traps", "dart", col, emitter_row,
-                        direction="down", interval=1.9, speed=250.0)
-                    return
+def _place_archer(path_rooms, path_corridors, rooms, add) -> None:
+    """
+    Pose un squelette archer dans une grande salle du chemin principal.
+
+    Règle de level design : l'archer doit balayer la salle SUR LE PASSAGE, pas à
+    côté. On repère donc par où le joueur entre dans la salle et par où il en
+    ressort, puis on tire une ligne de flèches PERPENDICULAIRE à ce trajet,
+    entre les deux : le joueur ne peut pas l'éviter, il ne peut que la traverser.
+
+    La salle est choisie la plus grande possible pour que la flèche parcoure
+    plusieurs tuiles avant de se planter dans le mur d'en face — on voit le trait
+    passer, on entend le tir, et on comprend d'où il vient.
+    """
+    by_index = {room.index: room for room in rooms}
+
+    def entry_tile(corridor, room):
+        """Tuile par laquelle ce couloir aborde la salle (la plus excentrée)."""
+        inside = [tile for tile in corridor.spine if room.contains(*tile)]
+        if not inside:
+            return None
+        center_col, center_row = room.center
+        return max(
+            inside,
+            key=lambda tile: abs(tile[0] - center_col) + abs(tile[1] - center_row),
+        )
+
+    # Salles traversées (ni le départ, ni la sortie), de la plus grande à la
+    # plus petite : une petite salle ne laisserait pas la place d'esquiver.
+    candidates = []
+    for position in range(1, len(path_rooms) - 1):
+        room = by_index[path_rooms[position]]
+        if room.width < 6 or room.height < 5:
+            continue
+        candidates.append((room.width * room.height, position, room))
+    if not candidates:
+        return
+    _, position, room = max(candidates, key=lambda entry: entry[0])
+
+    came_from = entry_tile(path_corridors[position - 1], room)
+    goes_to = entry_tile(path_corridors[position], room)
+    if came_from is None or goes_to is None:
+        came_from, goes_to = (room.col, room.center[1]), (room.col + room.width - 1, room.center[1])
+
+    # Le trajet est-il plutôt horizontal ou plutôt vertical dans cette salle ?
+    horizontal_trip = abs(goes_to[0] - came_from[0]) >= abs(goes_to[1] - came_from[1])
+
+    if horizontal_trip:
+        # Trajet gauche-droite : rideau de flèches VERTICAL, posé entre les deux
+        # ouvertures, et l'archer au bord haut de la salle tire vers le bas.
+        low, high = sorted((came_from[0], goes_to[0]))
+        col = (low + high) // 2
+        col = max(room.col, min(room.col + room.width - 1, col))
+        add("Traps", "archer", col, room.row + room.height - 1,
+            direction="down", interval=C.ARCHER_DEFAULT_INTERVAL,
+            speed=C.ARCHER_DEFAULT_SPEED)
+    else:
+        # Trajet bas-haut : rideau HORIZONTAL, l'archer au bord gauche tire vers
+        # la droite, sur toute la largeur de la salle.
+        low, high = sorted((came_from[1], goes_to[1]))
+        row = (low + high) // 2
+        row = max(room.row, min(room.row + room.height - 1, row))
+        add("Traps", "archer", room.col, row,
+            direction="right", interval=C.ARCHER_DEFAULT_INTERVAL,
+            speed=C.ARCHER_DEFAULT_SPEED)
 
 
 def _place_torches(grid, path_corridors, path_rooms, rooms, add, reserved) -> None:

@@ -23,7 +23,7 @@ laisse **son cadavre** sur place, et ce cadavre sert les vies suivantes :
 
 - il **émet une lueur** froide et pulsante : c'est un repère dans le noir ;
 - il **maintient une plaque de pression** enfoncée, donc une porte ouverte ;
-- il **bloque les fléchettes** des pièges ;
+- il **bloque les flèches** du squelette archer ;
 - on peut **marcher dessus** : un cadavre ne condamne jamais un couloir.
 
 En face, une **créature invisible** est lâchée après un délai fixe. Se faire
@@ -81,7 +81,7 @@ mécanique correspondante est cassée. Ce ne sont pas des tests décoratifs.
 |-------|------------------|
 | `check_levels.py` | sortie inatteignable, clé enfermée derrière sa propre porte, fiole absente ou en double, torches insuffisantes, parcours trop long |
 | `walk_test.py` | couloir trop étroit pour la boîte de collision, passage bouché, **piège sans fenêtre sûre assez longue pour être traversé** |
-| `smoke_test.py` | régression de mécanique : pièges visibles, animation de mort, cadavre + objets tombés au sol, réapparition de la fiole, lâcher de la créature, jumpscare, clé restituée après dévoration, changement de zone |
+| `smoke_test.py` | régression de mécanique : pièges visibles, animation de mort, cadavre + objets tombés au sol, réapparition de la fiole, **mort par flèche puis cadavre-bouclier (l'archer tire toujours, aucune flèche ne passe le corps)**, lâcher de la créature, jumpscare, clé restituée après dévoration, changement de zone |
 
 `smoke_test.py` écrit des captures PNG : c'est aussi le moyen de **voir** le jeu
 sans y jouer. Les captures sont converties en RGB, sans quoi l'alpha < 255 les
@@ -134,10 +134,12 @@ jour quand vous ajoutez un fichier.
 - **Obscurité par shader** : voile noir percé + passe de lueur additive.
 - Mort volontaire (fiole `R`) avec animation d'effondrement, mort par piège,
   mort par la créature avec jumpscare.
-- Cadavres persistants (lueur, plaques, blocage des fléchettes, franchissables).
+- Cadavres persistants (lueur, plaques, blocage des flèches, franchissables).
 - Objets tombés au sol autour du corps, aucune interaction avec le cadavre.
-- Pièges à pointes cycliques **visibles**, pièges à fléchettes, portes à clé et
-  à plaque, torches plantables, sortie vers l'étage suivant.
+- Pièges à pointes cycliques **visibles**, **squelette archer** (tireur
+  increvable, une flèche toutes les 0,3 s en travers d'une grande salle, arrêtée
+  par les cadavres), portes à clé et à plaque, torches plantables, sortie vers
+  l'étage suivant.
 - Créature : délai fixe, paliers sonores de tension, traque par BFS.
 - Menus, sélection d'étage, victoire, game over, classement local, 3 modes de
   jeu (Exploration / Sursis 8 morts / Contre-la-montre 5 min).
@@ -189,6 +191,7 @@ Bandes d'images du pack (`assets/sprites/`), découpées par `load_strip` :
 | héros repos / course | 4 et 6 images de **32 x 48** |
 | **héros mort** | **6 images de 48 x 48** — format différent des autres ! |
 | créature | 4 images de 32 x 48 |
+| squelette archer repos / tir | 4 et 6 images de 32 x 48 |
 | torche plantée | 3 images de 32 x 32 |
 | pointes | 7 images de 32 x 32 |
 | plaque | 3 images de 32 x 32 |
@@ -236,6 +239,10 @@ c'est lui qui détecte qu'un héros est devenu trop large pour un couloir.
   objet de quête unique doit être ajouté à cette liste.
 - Tous les pièges pulsent **en phase**, pilotés par `Level.clock` : sinon le
   joueur ne peut pas apprendre le rythme.
+- **Flèche sans portée** = mort incompréhensible. Un tir qui sort de la salle
+  par une ouverture traversait tout l'étage et tuait le joueur trois salles plus
+  loin, sans qu'il ait jamais vu l'archer. D'où `ARROW_RANGE` (9 tuiles) : le
+  danger reste dans la pièce du tireur.
 
 ---
 
@@ -309,7 +316,7 @@ que le joueur le demande.**
   (plus la sortie). Un objet posé reste invisible tant qu'on n'apporte pas de
   lumière — c'est ce qui donne sa valeur à une torche plantée.
 - **Le cadavre est le vrai corps**, la dernière image de l'animation de mort, pas
-  des ossements : c'est plus logique quand une fléchette vient s'y planter, et la
+  des ossements : c'est plus logique quand une flèche vient s'y planter, et la
   transition animation → cadavre est invisible.
 - **Aucune interaction avec le cadavre.** Les affaires tombent au sol **autour**
   du corps et se ramassent comme n'importe quel objet. Elles ne sont jamais
@@ -326,6 +333,15 @@ que le joueur le demande.**
 - **Les plaques de pression sont posées juste avant leur porte**, pour que le
   joueur voie la porte s'ouvrir et se refermer, et comprenne qu'il doit mourir
   dessus.
+- **Le tir vient d'un squelette archer, pas d'un mur.** On le voit, on ne peut
+  ni le tuer ni le pousser, et il est posé dans une **grande salle** pour que la
+  flèche traverse plusieurs tuiles avant de se planter. Sa cadence est
+  volontairement infernale (`ARCHER_DEFAULT_INTERVAL = 0.30`) : une traversée à
+  l'aveugle est mortelle une fois sur deux, aller-retour compris. **Il ne cesse
+  jamais de tirer, même après avoir tué le joueur** — c'est le cadavre laissé en
+  travers de la ligne qui encaisse les flèches, et c'est la vraie solution du
+  passage, pas un contournement. Ne baissez pas la cadence « pour être gentil » :
+  c'est l'endroit du jeu qui enseigne le pitch.
 - **Le jumpscare** de la créature remplace la mort brutale et instantanée :
   éclair blanc, la gueule qui tremble à l'écran, fondu au noir.
 

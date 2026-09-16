@@ -6,7 +6,8 @@ Description :
 Moteur central du jeu : c'est ici, et nulle part ailleurs, qu'on décide des
 conséquences d'une mort.
 
-  - Mort VOLONTAIRE (fiole) ou par PIÈGE : le corps reste dans le labyrinthe.
+  - Mort VOLONTAIRE (fiole), par PIÈGE ou par FLÈCHE : le corps reste dans le
+    labyrinthe.
     Il brille, il a une présence physique, et tout ce que le joueur transportait
     tombe au sol autour de lui, prêt à être ramassé. C'est un investissement pour
     la vie suivante.
@@ -47,7 +48,7 @@ class DeathManager:
         # La fiole est unique et ne se transmet jamais à un cadavre : elle
         # réapparaît à sa place d'origine (`level.restore_unique_items`).
         carried = [item for item in carried if item.type != C.ITEM_VIAL]
-        leaves_corpse = cause in (C.DEATH_VIAL, C.DEATH_TRAP)
+        leaves_corpse = cause in (C.DEATH_VIAL, C.DEATH_TRAP, C.DEATH_ARROW)
 
         if leaves_corpse:
             # Le corps reste sur place, et les affaires tombent autour de lui.
@@ -56,6 +57,14 @@ class DeathManager:
             if cause == C.DEATH_VIAL:
                 message = "Tu bois la fiole. Ton corps reste ici, et tes affaires avec."
                 self.audio.play("death_vial")
+            elif cause == C.DEATH_ARROW:
+                # C'est LA mort qui enseigne le jeu : le corps qu'on vient de
+                # laisser est déjà en travers de la ligne de tir.
+                message = (
+                    "Une fleche t'a traverse. L'archer ne s'arretera pas : "
+                    "ton corps, lui, arrete les fleches."
+                )
+                self.audio.play("trap_trigger")
             else:
                 message = (
                     "Mauvais timing. Les pointes rentrent et ressortent : "

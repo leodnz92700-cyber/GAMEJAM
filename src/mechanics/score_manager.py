@@ -39,7 +39,7 @@ class RunStats:
         self.deaths_total += 1
         if cause == C.DEATH_VIAL:
             self.deaths_by_vial += 1
-        elif cause == C.DEATH_TRAP:
+        elif cause in (C.DEATH_TRAP, C.DEATH_ARROW):
             self.deaths_by_trap += 1
         elif cause == C.DEATH_DEVOURED:
             self.deaths_devoured += 1

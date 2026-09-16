@@ -183,7 +183,7 @@ class GameView(arcade.View):
             self.score.stats.zones_visited.add(self.level.zone)
 
         self.level.update_plates(self.player, self.audio)
-        self.level.update_darts(delta_time)
+        self.level.update_archers(delta_time)
         self.interaction_target = self.interaction.find_target(self.player, self.level)
 
         if self._check_hazards():
@@ -221,8 +221,8 @@ class GameView(arcade.View):
                 self._die(C.DEATH_TRAP)
                 return True
 
-        if arcade.check_for_collision_with_list(self.player, self.level.dart_list):
-            self._die(C.DEATH_TRAP)
+        if arcade.check_for_collision_with_list(self.player, self.level.arrow_list):
+            self._die(C.DEATH_ARROW)
             return True
         return False
 
@@ -395,11 +395,14 @@ class GameView(arcade.View):
         level.trap_list.draw(pixelated=True)
         level.wall_list.draw(pixelated=True)
         level.door_list.draw(pixelated=True)
+        # L'archer est un personnage, pas du décor : il se dessine APRÈS les
+        # murs, sinon le mur du haut lui couperait la tête.
+        level.archer_list.draw(pixelated=True)
         level.corpse_list.draw(pixelated=True)
         level.torch_list.draw(pixelated=True)
         level.item_list.draw(pixelated=True)
         level.npc_list.draw(pixelated=True)
-        level.dart_list.draw(pixelated=True)
+        level.arrow_list.draw(pixelated=True)
         if self.monster_manager.monster is not None:
             arcade.draw_sprite(self.monster_manager.monster, pixelated=True)
         if self.player.is_alive:

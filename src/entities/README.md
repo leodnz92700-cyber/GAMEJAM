@@ -5,8 +5,8 @@ Contient les acteurs dynamiques du jeu.
 - **corpse.py** : Très important. Gère les cadavres laissés après une mort par
   fiole ou piège. Le sprite du cadavre est la DERNIÈRE image de l'animation de
   mort du héros : c'est donc bien son corps qui reste sur place, ce qui rend
-  cohérent le fait qu'il arrête les fléchettes et maintienne une plaque de
-  pression. Il émet une lueur, et ne contient aucun objet : les affaires du
+  cohérent le fait qu'il arrête les flèches de l'archer et maintienne une
+  plaque de pression. Il émet une lueur, et ne contient aucun objet : les affaires du
   joueur tombent au sol autour de lui (`Level.drop_items`).
 - **items.py** : Les objets ramassables (fiole de poison pour se sacrifier,
   clés, torches).

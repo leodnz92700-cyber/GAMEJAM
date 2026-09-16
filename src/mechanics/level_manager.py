@@ -28,7 +28,7 @@ from src.entities.textures import feet_box, load_single
 from src.environment.door import Door, make_door_from_map_object
 from src.environment.pressure_plate import make_plate_from_map_object
 from src.environment.torch import Torch
-from src.environment.trap import DartTrap, SpikeTrap, make_trap_from_map_object
+from src.environment.trap import SkeletonArcher, SpikeTrap, make_trap_from_map_object
 from src.mechanics.map_loader import LoadedMap, load_map
 
 
@@ -52,7 +52,10 @@ class Level:
         self.item_list = arcade.SpriteList()
         self.torch_list = arcade.SpriteList()
         self.corpse_list = arcade.SpriteList()
-        self.dart_list = arcade.SpriteList()
+        # Les archers sont dessinés avec les personnages, pas avec le décor :
+        # ils mesurent 32x48 et leur tête déborderait sous le mur du haut.
+        self.archer_list = arcade.SpriteList()
+        self.arrow_list = arcade.SpriteList()
         self.npc_list = arcade.SpriteList()
 
         self.doors_by_id: dict[str, Door] = {}
@@ -108,8 +111,12 @@ class Level:
             elif kind == "pressure_plate":
                 self.plate_list.append(make_plate_from_map_object(map_object))
 
-            elif kind in ("spike", "dart"):
-                self.trap_list.append(make_trap_from_map_object(map_object))
+            elif kind in ("spike", "archer", "dart"):
+                trap = make_trap_from_map_object(map_object)
+                if isinstance(trap, SkeletonArcher):
+                    self.archer_list.append(trap)
+                else:
+                    self.trap_list.append(trap)
 
             elif kind == "npc":
                 lines = str(map_object.properties.get("lines", "...")).split("|")
@@ -177,28 +184,30 @@ class Level:
             else:
                 self.close_door(door)
 
-    def update_darts(self, delta_time: float) -> None:
+    def update_archers(self, delta_time: float) -> None:
         """
-        Fait tirer les émetteurs et avancer les projectiles.
+        Fait tirer les archers et avancer les flèches.
 
-        Un projectile est absorbé par un mur, une porte fermée ou un CADAVRE :
-        le joueur peut donc se servir de son ancien corps comme bouclier pour
-        traverser un couloir piégé.
+        Les archers tirent SANS CONDITION : ils ne visent pas, ne s'arrêtent
+        jamais et ne s'occupent pas de savoir si le joueur est vivant. Une flèche
+        est absorbée par un mur, une porte fermée ou un CADAVRE : le joueur
+        traverse donc la salle de l'archer en laissant son ancien corps sur la
+        trajectoire, qui encaisse les flèches à sa place aussi longtemps qu'il
+        reste là.
         """
-        for trap in self.trap_list:
-            if isinstance(trap, DartTrap):
-                trap.update_emitter(delta_time, self.dart_list)
+        for archer in self.archer_list:
+            archer.update_emitter(delta_time, self.arrow_list)
 
-        for dart in list(self.dart_list):
-            dart.advance(delta_time)
+        for arrow in list(self.arrow_list):
+            arrow.advance(delta_time)
             blocked = (
-                dart.lifetime > C.DART_LIFETIME
-                or arcade.check_for_collision_with_list(dart, self.wall_list)
-                or arcade.check_for_collision_with_list(dart, self.door_blocker_list)
-                or arcade.check_for_collision_with_list(dart, self.corpse_list)
+                arrow.spent
+                or arcade.check_for_collision_with_list(arrow, self.wall_list)
+                or arcade.check_for_collision_with_list(arrow, self.door_blocker_list)
+                or arcade.check_for_collision_with_list(arrow, self.corpse_list)
             )
             if blocked:
-                dart.remove_from_sprite_lists()
+                arrow.remove_from_sprite_lists()
 
     def update_animations(self, delta_time: float) -> None:
         self.clock += delta_time

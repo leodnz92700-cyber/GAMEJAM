@@ -17,6 +17,7 @@ Ce qui est importé :
   - les bandes d'animation du héros (3 directions, idle et course) ;
   - le fantôme, qui sert de créature ;
   - torche, piège, plaque de pression (animés) ;
+  - le squelette archer (repos et tir, 3 directions) et sa flèche ;
   - portes de face et de profil, ouvertes et fermées ;
   - fiole, clé, escalier de sortie, ossements décoratifs.
 """
@@ -60,6 +61,16 @@ DIRECT_COPIES = [
     ("Items/Static/health_potion.png", "item_vial.png"),
     ("Items/Static/golden_key.png", "item_key.png"),
     ("Enemies/Skeleton warrior/Strips/Idle/down_strip.png", "npc_idle.png"),
+    # Le squelette archer : un tireur immobile et increvable, pose dans une
+    # grande salle. Bande d'attaque = le geste de tir, la fleche part a la
+    # derniere image (voir src/environment/trap.py).
+    ("Enemies/Skeleton archer/Strips/Idle/down_strip.png", "archer_idle_down.png"),
+    ("Enemies/Skeleton archer/Strips/Idle/up_strip.png", "archer_idle_up.png"),
+    ("Enemies/Skeleton archer/Strips/Idle/side_strip.png", "archer_idle_side.png"),
+    ("Enemies/Skeleton archer/Strips/Attack/down_strip.png", "archer_shoot_down.png"),
+    ("Enemies/Skeleton archer/Strips/Attack/up_strip.png", "archer_shoot_up.png"),
+    ("Enemies/Skeleton archer/Strips/Attack/side_strip.png", "archer_shoot_side.png"),
+    ("Enemies/Skeleton archer/arrow.png", "arrow.png"),
 ]
 
 TILE = 32
@@ -102,9 +113,6 @@ def import_exit() -> None:
     stairs.paste(tile_image(tileset, 42), (0, 0))
     stairs.paste(tile_image(tileset, 54), (0, TILE))
     stairs.save(SPRITES / "exit.png")
-
-    # Tuile percee d'une grille : sert d'emetteur pour le piege a flechettes.
-    tile_image(tileset, 4).save(SPRITES / "trap_dart.png")
 
 
 def import_torch_item() -> None:
