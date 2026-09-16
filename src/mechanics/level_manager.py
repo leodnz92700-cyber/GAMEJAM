@@ -104,7 +104,7 @@ class Level:
                     )
 
             elif kind in ("door_key", "door_plate", "door"):
-                door = make_door_from_map_object(map_object)
+                door = make_door_from_map_object(map_object, self.map)
                 self.door_list.append(door)
                 self.door_blocker_list.append(door)
                 self.doors_by_id[door.door_id] = door

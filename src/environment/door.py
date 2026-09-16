@@ -89,16 +89,22 @@ class Door(arcade.Sprite):
         self.texture = self.texture_closed
 
 
-def make_door_from_map_object(map_object) -> Door:
+def make_door_from_map_object(map_object, loaded_map=None) -> Door:
     """Construit la bonne variante de porte à partir d'un objet Tiled."""
     properties = map_object.properties
     door_id = str(properties.get("door_id") or properties.get("groupe") or f"door_{int(map_object.center_x)}")
     is_plate_door = map_object.type == "door_plate" or "plate_id" in properties or "groupe" in properties
     
     passage = str(properties.get("passage", "vertical"))
-    if "passage" not in properties and map_object.rotation:
-        # Tiled utilise souvent 90, -90, 270 pour l'horizontal. 
-        if abs(map_object.rotation) in (90, 270):
+    if "passage" not in properties:
+        if loaded_map:
+            col = int(map_object.center_x // 32)
+            row = int(map_object.center_y // 32)
+            wall_above = row < loaded_map.height_tiles - 1 and not loaded_map.walkable[row+1][col]
+            wall_below = row > 0 and not loaded_map.walkable[row-1][col]
+            if wall_above or wall_below:
+                passage = "horizontal"
+        elif getattr(map_object, "rotation", 0.0) and abs(map_object.rotation) in (90, 270):
             passage = "horizontal"
         
     return Door(
