@@ -202,11 +202,11 @@ def walk(view: GameView) -> tuple[bool, str]:
 
 
 def main() -> None:
-    names = sys.argv[1:] or [C.TEST_LEVEL] + C.LEVELS
+    names = sys.argv[1:] or [C.TEST_LEVEL, C.LEVEL_NAME]
     window = arcade.Window(C.WINDOW_WIDTH, C.WINDOW_HEIGHT, "walk test", visible=False)
     failed = False
     for name in names:
-        view = GameView(level_names=[name])
+        view = GameView(level_name=name)
         view.setup()
         window.show_view(view)
 

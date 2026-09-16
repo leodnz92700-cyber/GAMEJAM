@@ -53,11 +53,10 @@ DEATH_BLACKOUT = 0.45
 class GameView(arcade.View):
     """Le jeu lui-même."""
 
-    def __init__(self, mode: str = C.MODE_FREE, level_index: int = 0,
-                 level_names: list[str] | None = None):
+    def __init__(self, mode: str = C.MODE_FREE, level_name: str | None = None):
         super().__init__()
         self.mode = mode
-        self.level_manager = LevelManager(level_names, start_index=level_index)
+        self.level_manager = LevelManager(level_name)
 
         self.audio = AudioManager()
         self.score = ScoreManager()
@@ -117,7 +116,7 @@ class GameView(arcade.View):
         # permanence en bas à droite, et l'invite « E » apparaît toute seule
         # quand il y a quelque chose à faire.
         self.dialog.show(
-            "Tu te reveilles dans le noir. Quelque part au-dessus, il y a une sortie.",
+            "Tu te reveilles dans le noir. Quelque part, il y a une sortie.",
             duration=4.5,
         )
 
@@ -202,7 +201,7 @@ class GameView(arcade.View):
             self._die(C.DEATH_DEVOURED)
             return
         if self.level.reached_exit(self.player):
-            self._clear_floor()
+            self._victory()
             return
 
         self._check_mode_limits()
@@ -297,25 +296,8 @@ class GameView(arcade.View):
         self.monster_manager.reset()
         self._snap_camera()
 
-    def _clear_floor(self) -> None:
-        """Sortie atteinte : étage suivant, ou victoire si c'était le sommet."""
-        self.score.stats.floors_cleared += 1
-        next_level = self.level_manager.load_next()
-        if next_level is None:
-            self._victory()
-            return
-
-        self.level = next_level
-        self.player.respawn_at(*self.level.spawn_point)
-        self._rebuild_physics()
-        self.monster_manager.reset()
-        self.level.update_zone(*self.player.position)
-        self._snap_camera()
-        self.hud.show_message(
-            f"Etage {self.level_manager.floor_number}. La tour continue.", duration=3.0
-        )
-
     def _victory(self) -> None:
+        """Sortie atteinte : le jeu ne compte qu'un niveau, la partie est gagnée."""
         from src.views.victory_view import VictoryView
 
         self.finished = True

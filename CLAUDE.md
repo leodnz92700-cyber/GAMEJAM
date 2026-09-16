@@ -31,6 +31,10 @@ dévorer ne laisse **rien** : pas de cadavre, tous les objets perdus. C'est tout
 la tension du jeu : **choisir sa mort est une ressource, la subir est une
 punition.**
 
+Le jeu ne contient **qu'un seul niveau** : atteindre sa sortie gagne la partie.
+Il n'y a ni ascension d'etages, ni ecran de selection — c'est une decision de
+l'equipe, ne la rouvrez pas sans qu'on vous le demande.
+
 Une partie doit tenir en **moins de 5 minutes**.
 
 ### Les trois règles de game design à ne jamais casser
@@ -62,7 +66,7 @@ Arcade **3.3.3**.
 ```bash
 .venv/bin/python main.py                                       # jouer
 .venv/bin/python main.py --map level_test.tmx --skip-menu      # debug rapide
-.venv/bin/python main.py --level 2 --mode timed                # etage 2, contre-la-montre
+.venv/bin/python main.py --mode timed --skip-menu              # contre-la-montre, sans menu
 ```
 
 ### Vérifications — à lancer après toute modification
@@ -130,7 +134,7 @@ jour quand vous ajoutez un fichier.
 - Déplacement animé 4 directions, collisions murs, `PhysicsEngineSimple`.
 - **Caméra fixe par zone** : 1 écran = 1 zone de 40 x 22 tuiles, la caméra
   **saute** à la zone voisine (petit fondu), elle ne suit jamais le joueur.
-  Un étage = 4 zones (2x2), soit une carte de 80 x 44 tuiles.
+  Le niveau = 4 zones (2x2), soit une carte de 80 x 44 tuiles.
 - **Obscurité par shader** : voile noir percé + passe de lueur additive.
 - Mort volontaire (fiole `R`) avec animation d'effondrement, mort par piège,
   mort par la créature avec jumpscare.
@@ -141,7 +145,7 @@ jour quand vous ajoutez un fichier.
   par les cadavres), portes à clé et à plaque, torches plantables, sortie vers
   l'étage suivant.
 - Créature : délai fixe, paliers sonores de tension, traque par BFS.
-- Menus, sélection d'étage, victoire, game over, classement local, 3 modes de
+- Écrans d'accueil, de victoire et de défaite, classement local, 3 modes de
   jeu (Exploration / Sursis 8 morts / Contre-la-montre 5 min).
 - ATH entièrement transparent (voir §6).
 
@@ -176,7 +180,9 @@ jour quand vous ajoutez un fichier.
   Utilisez `src/ui/text_cache.py` : `draw_text_cached` réutilise des objets
   `arcade.Text`, et `draw_text_shadowed` ajoute l'ombre portée d'1 px
   **obligatoire** pour tout texte posé sur le jeu (sinon illisible dès qu'une
-  torche éclaire le fond).
+  torche éclaire le fond). C'est aussi `text_cache` qui applique la **police
+  pixel** du jeu à tout le monde : n'écrivez jamais un `arcade.Text` à la main,
+  il sortirait dans la police du système et jurerait avec le reste.
 - **`pixelated=True` sur chaque `draw`** : le pack est du pixel art, le
   filtrage linéaire le rend flou.
 - Frame-rate independence : `change_x = vitesse * delta_time`, jamais une
@@ -291,6 +297,69 @@ Disposition (`src/ui/hud.py`) :
 - Pas de nom d'objet sous les cases d'inventaire : le sprite suffit, et le texte
   débordait sur l'objet.
 
+### Les écrans hors-jeu (accueil, victoire, défaite)
+
+Ils partagent la **police pixel** du jeu (*Pixelify Sans*, `assets/fonts/`,
+licence OFL, chargée par `src/ui/fonts.py`). Elle a été choisie contre les
+classiques du genre pour deux raisons qu'il faut connaître avant d'en changer :
+**elle a de vraies bas-de-casse** (Silkscreen et Press Start 2P sont en
+capitales seulement, le paragraphe de lore y devenait un mur de majuscules) et
+**elle a un vrai gras**, sur lequel repose toute la hiérarchie de l'interface.
+Elle est plus large que la police du système à taille égale : après un
+changement de taille, **relancez l'écran et regardez**, les retours à la ligne
+et les colonnes bougent.
+
+Ils partagent aussi une **palette relevée sur le logo** : l'or de son liseré
+(`COLOR_ACCENT`, échantillonné à (255, 244, 149)) sur un noir légèrement rougi,
+des gris qui tirent sur le brun, aucun angle arrondi et aucun dégradé — le jeu
+est en pixel art, l'interface aussi. L'or ne sert qu'à ce qui est **actif ou
+important** ; le rouge, qu'au danger — c'est celui des lettres du logo, remonté
+jusqu'à être lisible en texte.
+
+**Les lueurs du JEU ne suivent pas cette palette.** Le cadavre reste d'un cyan
+froid (`COLOR_CORPSE_GLOW`) alors que l'interface est chaude, et c'est
+volontaire : dans le noir, c'est à sa couleur que le joueur distingue de loin un
+cadavre d'une torche plantée (`COLOR_TORCH_GLOW`, orange). Deux lueurs dorées
+seraient indiscernables.
+
+Trois règles de mise en page, et elles expliquent tout le code de
+`src/ui/menu_components.py` :
+
+0. **L'écran d'accueil ne rappelle aucune touche.** Naviguer aux flèches et
+   valider à Entrée est un réflexe acquis : l'écrire n'apprend rien et encombre
+   le bas de la page. Seul le choix du mode a un repère visuel (trois traits),
+   parce que rien d'autre ne dit qu'il y a trois modes. Les écrans de fin, eux,
+   gardent leur ligne « Entrée : retour à l'écran d'accueil ».
+1. **Rien n'est posé « à l'oeil ».** Chaque écran déclare sa grille en
+   constantes en haut du fichier (`PANELS_TOP`, `LEFT_WIDTH`, `STATS_BOTTOM`…)
+   et tout s'en déduit. Deux panneaux côte à côte commencent et finissent aux
+   mêmes ordonnées, sinon l'écran part en morceaux.
+2. **Une colonne se place à son abscisse, jamais avec des espaces.** La police
+   du système n'est pas à chasse fixe : `"VICTOIRE   03:34"` donne des colonnes
+   en escalier. `draw_table` reçoit des `Column(titre, largeur, alignement)` et
+   aligne chaque cellule lui-même ; les nombres sont **alignés à droite**.
+3. **Un panneau ne se dimensionne pas au contenu, c'est le contenu qui doit y
+   entrer.** Le lore de l'accueil est calibré sur six lignes : un paragraphe de
+   plus déborde par le bas, silencieusement. Vérifiez à l'écran.
+
+Le **logo** (`assets/ui/logo.png`, chargé par `src/ui/logo.py`) est livré sur un
+**fond noir opaque**, pas sur du transparent. Posé tel quel, il collerait un
+rectangle noir franc sur l'écran ; `logo.py` lui fabrique donc un canal alpha à
+partir de sa luminosité — le noir devient transparent, la lueur s'éteint
+d'elle-même sur ses bords — puis rogne au plus près du dessin, ce qui permet de
+l'aligner. **La version actuelle du logo est, elle, correctement détourée** : le
+code détecte son canal alpha et le respecte, il ne se déclenche que sur une
+image opaque. Dans les deux cas le rognage a lieu, et c'est lui qui compte pour
+la mise en page : le logo est un bandeau très étalé (1160 x 181 une fois rogné),
+c'est donc sa HAUTEUR qui limite son échelle — élargir sa boîte ne le grandit
+plus. **Si le fichier manque, le
+titre s'affiche en texte** : un dépôt tout juste cloné ne doit pas planter sur
+son écran d'accueil.
+
+Les deux écrans de fin sont **le même écran** (`src/views/end_screen.py`) : seuls
+le titre, sa couleur et la phrase de verdict changent. Les modifier séparément,
+c'est garantir qu'ils finiront désalignés l'un par rapport à l'autre.
+
 ### `InteractionTarget` — l'invite ne peut pas mentir
 
 `src/mechanics/interaction_manager.find_target(player, level)` répond à « que
@@ -356,6 +425,16 @@ que le joueur le demande.**
   travers de la ligne qui encaisse les flèches, et c'est la vraie solution du
   passage, pas un contournement. Ne baissez pas la cadence « pour être gentil » :
   c'est l'endroit du jeu qui enseigne le pitch.
+- **Un seul niveau, une seule sortie.** Le deuxième étage et l'écran de
+  sélection d'étage ont été supprimés : le numéro d'étage n'apparaît plus nulle
+  part (ni dans l'ATH, ni dans les statistiques de fin). Si la tour reprend un
+  jour plusieurs étages, tout repart de `C.LEVEL_NAME` et de `LevelManager`.
+- **L'interface est calée sur le logo**, pas l'inverse : police pixel, or et
+  rouge sombre sur noir, panneaux à bords nets, équerres dans les coins. Si le
+  logo change de couleur, c'est `constants.py` qu'on rééchantillonne — pas le
+  logo qu'on retouche.
+- **Aucun rappel de touches sur l'écran d'accueil.** Demandé explicitement : le
+  joueur sait déjà naviguer un menu.
 - **Le jumpscare** de la créature remplace la mort brutale et instantanée :
   éclair blanc, la gueule qui tremble à l'écran, fondu au noir.
 

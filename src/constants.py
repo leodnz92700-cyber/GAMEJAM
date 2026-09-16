@@ -20,7 +20,10 @@ from pathlib import Path
 ROOT_DIR = Path(__file__).resolve().parents[1]
 ASSETS_DIR = ROOT_DIR / "assets"
 SPRITES_DIR = ASSETS_DIR / "sprites"
+UI_DIR = ASSETS_DIR / "ui"          # images d'interface (logo), pas du decor
+LOGO_PATH = UI_DIR / "logo.png"     # titre du jeu, dessine sur l'ecran d'accueil
 AUDIO_DIR = ASSETS_DIR / "audio"
+FONTS_DIR = ASSETS_DIR / "fonts"    # police pixel de l'interface (voir src/ui/fonts.py)
 MAPS_DIR = ASSETS_DIR / "maps"
 DATA_DIR = ROOT_DIR / "data"
 LEADERBOARD_PATH = DATA_DIR / "leaderboard.json"
@@ -197,34 +200,59 @@ GAME_MODES = {
     },
     MODE_TIMED: {
         "label": "Contre-la-montre",
-        "description": "5 minutes pour atteindre le sommet, morts illimitees.",
+        "description": "5 minutes pour trouver la sortie, morts illimitees.",
         "max_deaths": None,
         "time_limit": 300.0,
     },
 }
 
 # --------------------------------------------------------------------------- #
-# Niveaux (étages de la tour)
+# Niveau
 # --------------------------------------------------------------------------- #
-LEVELS = ["level_01.tmx", "level_02.tmx"]
+# Le jeu ne contient volontairement QU'UN SEUL niveau : il n'y a ni ascension
+# d'etages, ni ecran de selection. Atteindre la sortie, c'est gagner la partie.
+# Si un jour la tour reprend plusieurs etages, c'est ici que ca recommence — et
+# il faudra reintroduire un enchainement dans `LevelManager`.
+LEVEL_NAME = "level_01.tmx"
 TEST_LEVEL = "level_test.tmx"
 
 # --------------------------------------------------------------------------- #
 # Couleurs
 # --------------------------------------------------------------------------- #
-COLOR_BACKGROUND = (10, 10, 14)
-COLOR_HUD_BACKGROUND = (18, 18, 24)   # encore utilisé par les menus
-COLOR_HUD_BORDER = (52, 52, 66)
+# La palette de l'INTERFACE est relevee sur le logo du jeu : un lisere dore
+# (255, 244, 149) autour de lettres rouge sang (88, 19, 15). D'ou un accent or
+# chaud sur un noir legerement rougi, et des gris tirant sur le brun plutot que
+# sur le bleu. Le rouge profond du logo est trop sombre pour du texte : le rouge
+# de danger est la meme teinte, remontee jusqu'a etre lisible.
+COLOR_BACKGROUND = (12, 9, 9)
+
+# --- Interface : panneaux et bordures --------------------------------------- #
+# Les menus sont faits de panneaux sombres a bord net (aucun arrondi : le jeu
+# est en pixel art) que l'on pose sur le fond noir.
+COLOR_PANEL_FILL = (20, 15, 15)
+COLOR_PANEL_FILL_SOFT = (29, 22, 21)   # fond des lignes paires d'un tableau
+COLOR_HUD_BORDER = (68, 54, 46)        # bord au repos (ATH, panneaux, cases)
+COLOR_PANEL_BORDER_ACTIVE = (214, 172, 94)    # bord d'un element selectionne
+COLOR_RULE = (52, 40, 34)              # filets de separation dans les tableaux
+
 # L'ATH est posé en transparence sur le jeu : sans ombre portée, le texte
 # devient illisible dès qu'il passe sur une zone éclairée.
 COLOR_TEXT_SHADOW = (0, 0, 0, 190)
-COLOR_KEYCAP_FILL = (26, 26, 34, 215)
-COLOR_KEYCAP_BORDER = (126, 126, 148)
-COLOR_KEYCAP_LABEL = (222, 222, 234)
-COLOR_TEXT = (216, 216, 228)
-COLOR_TEXT_DIM = (124, 124, 142)
-COLOR_ACCENT = (198, 164, 96)
-COLOR_DANGER = (188, 68, 68)
+COLOR_KEYCAP_FILL = (28, 21, 20, 215)
+COLOR_KEYCAP_BORDER = (140, 122, 104)
+COLOR_KEYCAP_LABEL = (234, 226, 212)
+COLOR_TEXT = (230, 222, 210)
+COLOR_TEXT_DIM = (148, 132, 118)
+COLOR_TEXT_FAINT = (98, 84, 74)        # sous-titre d'un element non selectionne
+COLOR_ACCENT = (243, 214, 124)         # l'or du lisere du logo
+COLOR_ACCENT_DIM = (148, 112, 58)      # le meme, en retrait
+COLOR_DANGER = (203, 66, 54)           # le rouge du logo, remonte pour etre lisible
+
+# --- Lumieres du JEU (rien a voir avec la palette de l'interface) ------------ #
+# Ces deux teintes doivent rester tres differentes l'une de l'autre : dans le
+# noir, c'est a leur couleur que le joueur reconnait de loin une torche plantee
+# d'un cadavre. Le cadavre reste donc FROID meme si l'interface est chaude —
+# deux lueurs dorees seraient impossibles a distinguer.
 COLOR_CORPSE_GLOW = (120, 200, 220)
 COLOR_TORCH_GLOW = (255, 176, 88)
 

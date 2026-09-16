@@ -6,16 +6,16 @@ Description :
 Écran de défaite. Il n'apparaît que dans les modes qui autorisent un échec :
 en mode Exploration, le joueur meurt sans jamais perdre.
 
-On affiche les mêmes statistiques que l'écran de victoire : le but est que le
-joueur reparte en sachant combien de morts lui ont vraiment servi.
+Même mise en page que la victoire (`end_screen.py`), volontairement : le joueur
+doit pouvoir comparer d'un coup d'oeil deux parties, celle qu'il a perdue et
+celle qu'il a gagnee. Seuls le titre et sa couleur changent.
 """
 from __future__ import annotations
 
 import arcade
 
 from src import constants as C
-from src.ui.text_cache import draw_text_cached
-from src.ui.menu_components import draw_hint, draw_title
+from src.views.end_screen import draw_end_screen
 
 
 class GameOverView(arcade.View):
@@ -38,23 +38,10 @@ class GameOverView(arcade.View):
 
     def on_draw(self) -> None:
         self.clear()
-        draw_title("LA TOUR TE GARDE", C.WINDOW_HEIGHT - 140, 42)
-        if self.reason:
-            draw_text_cached(
-                self.reason,
-                C.WINDOW_WIDTH / 2,
-                C.WINDOW_HEIGHT - 190,
-                C.COLOR_DANGER,
-                17,
-                anchor_x="center",
-                italic=True,
-            )
-
-        top = C.WINDOW_HEIGHT - 260
-        for index, (label, value) in enumerate(self.stats.as_lines()):
-            y = top - index * 28
-            draw_text_cached(label, C.WINDOW_WIDTH / 2 - 260, y, C.COLOR_TEXT_DIM, 14)
-            draw_text_cached(value, C.WINDOW_WIDTH / 2 + 200, y, C.COLOR_TEXT, 14,
-                             anchor_x="right")
-
-        draw_hint("Entree : retour a l'ecran d'accueil")
+        draw_end_screen(
+            "LA TOUR TE GARDE",
+            C.COLOR_DANGER,
+            self.reason,
+            C.COLOR_DANGER,
+            self.stats,
+        )

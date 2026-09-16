@@ -3,14 +3,16 @@ Fichier : level_manager.py
 Auteur : base technique (game jam)
 
 Description :
-Construit un étage jouable à partir d'une carte Tiled, et gère l'enchaînement
-des étages de la tour.
+Construit le niveau jouable à partir d'une carte Tiled.
 
 Deux objets ici :
-  - `Level` : tout l'état d'un étage (listes de sprites, portes, plaques,
+  - `Level` : tout l'état du niveau (listes de sprites, portes, plaques,
     pièges, cadavres laissés par le joueur) et la simulation de son
     environnement (plaques enfoncées, portes ouvertes, projectiles) ;
-  - `LevelManager` : la pile d'étages, pour passer du niveau 1 au niveau 2.
+  - `LevelManager` : le chargement de la carte.
+
+Le jeu ne contient **qu'un seul niveau** : atteindre la sortie termine la
+partie. Il n'y a donc ni enchaînement d'étages, ni numéro d'étage à afficher.
 
 Le découpage en zones vit aussi ici : `Level.zone` indique la zone courante,
 et `update_zone()` détecte le franchissement d'une frontière. La caméra ne suit
@@ -33,11 +35,10 @@ from src.mechanics.map_loader import LoadedMap, load_map
 
 
 class Level:
-    """État complet d'un étage en cours de jeu."""
+    """État complet du niveau en cours de jeu."""
 
-    def __init__(self, loaded_map: LoadedMap, floor_number: int = 1):
+    def __init__(self, loaded_map: LoadedMap):
         self.map = loaded_map
-        self.floor_number = floor_number       # numéro d'étage affiché au joueur
 
         # --- Listes de sprites, dans l'ordre de dessin --------------------- #
         self.floor_list = loaded_map.floor_list
@@ -353,33 +354,18 @@ class Level:
 
 
 class LevelManager:
-    """Pile des étages de la tour."""
+    """Charge l'unique niveau du jeu."""
 
-    def __init__(self, level_names: list[str] | None = None, start_index: int = 0):
-        self.level_names = list(level_names or C.LEVELS)
-        self.index = start_index
+    def __init__(self, level_name: str | None = None):
+        # `level_name` n'existe que pour les outils et le drapeau `--map` :
+        # une partie normale joue toujours `C.LEVEL_NAME`.
+        self.level_name = level_name or C.LEVEL_NAME
         self.level: Level | None = None
 
     @property
     def current_name(self) -> str:
-        return self.level_names[self.index]
-
-    @property
-    def floor_number(self) -> int:
-        """Numéro d'étage affiché au joueur (1 = rez-de-chaussée de la tour)."""
-        return self.index + 1
-
-    @property
-    def has_next(self) -> bool:
-        return self.index + 1 < len(self.level_names)
+        return self.level_name
 
     def load_current(self) -> Level:
-        self.level = Level(load_map(self.current_name), floor_number=self.floor_number)
+        self.level = Level(load_map(self.current_name))
         return self.level
-
-    def load_next(self) -> Level | None:
-        """Passe à l'étage suivant, ou None si le joueur est au sommet."""
-        if not self.has_next:
-            return None
-        self.index += 1
-        return self.load_current()

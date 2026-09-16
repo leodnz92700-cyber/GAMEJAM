@@ -163,7 +163,7 @@ def check(map_name: str) -> list[str]:
 
 
 def main() -> None:
-    names = sys.argv[1:] or [C.TEST_LEVEL] + C.LEVELS
+    names = sys.argv[1:] or [C.TEST_LEVEL, C.LEVEL_NAME]
     failed = False
     for name in names:
         print(f"{name} :")

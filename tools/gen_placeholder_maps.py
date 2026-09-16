@@ -616,7 +616,7 @@ def write_tmx(path: Path, grid: list[list[str]], objects: list[dict],
 
 def main() -> None:
     MAPS.mkdir(parents=True, exist_ok=True)
-    for name, seed in (("level_test", 3), ("level_01", 20260315), ("level_02", 77)):
+    for name, seed in (("level_test", 3), ("level_01", 20260315)):
         grid, objects = build_level(seed)
         write_tmx(MAPS / f"{name}.tmx", grid, objects, random.Random(seed + 1))
         torches = sum(1 for o in objects if o["class"] == "torch")
