@@ -341,10 +341,13 @@ GAMEJAM/
 │   │   ├── devoured.wav             # [Léo] Mort subie
 │   │   ├── death_vial.wav           # [Léo] Mort choisie
 │   │   └── pickup, door_open, torch_place, plate_click, trap_trigger  # [Léo] Interactions
-│   ├── fonts/                       # [Erwan] Polices (vide : police système pour l'instant)
+│   ├── fonts/                       # [Erwan] Police pixel de l'interface
+│   │   ├── PixelifySans.ttf         # [Erwan] Pixelify Sans, licence SIL OFL
+│   │   └── OFL.txt                  # [Erwan] La licence, à conserver en cas de redistribution
+│   ├── ui/                          # [Erwan] Images d'interface (pas du décor)
+│   │   └── logo.png                 # [Erwan] Logo du jeu, affiché sur l'écran d'accueil
 │   ├── maps/                        # [Tom]
-│   │   ├── level_01.tmx             # [Tom] Étage 1
-│   │   ├── level_02.tmx             # [Tom] Étage 2
+│   │   ├── level_01.tmx             # [Tom] LE niveau du jeu (le seul)
 │   │   ├── level_test.tmx           # [Tom] Carte de test, pour itérer vite
 │   │   ├── Tileset_Dungeon.png/.tsx # [Tom] Tileset du pack, importé
 │   │   └── README.md                # [Tom] Convention Tiled : calques, classes, propriétés, règles de contenu
@@ -358,7 +361,7 @@ GAMEJAM/
 │       ├── trap_spike_strip.png     # [Tom] Pointes, 7 images (cycle)
 │       ├── plate_strip.png          # [Tom] Plaque relevée / enfoncée
 │       ├── door_front/side_*.png    # [Tom] Portes de face et de profil
-│       ├── exit.png                 # [Tom] Escalier vers l'étage suivant
+│       ├── exit.png                 # [Tom] La sortie : l'atteindre gagne la partie
 │       ├── archer_idle/shoot_*.png  # [Tom] Squelette archer, repos et tir
 │       ├── arrow.png                # [Tom] Sa flèche
 │       └── light_gradient.png       # [Léo] Dégradé radial du moteur de lumière
@@ -388,7 +391,7 @@ GAMEJAM/
     │   ├── death_manager.py         # [Inès] Mort choisie (cadavre + objets) vs subie (rien)
     │   ├── interaction_manager.py   # [Melvin] Touches E/F/R : ramasser, ouvrir, planter, boire
     │   ├── inventory_system.py      # [Théo] Sac de 2 places
-    │   ├── level_manager.py         # [Melvin] Construit un étage, simule l'environnement, gère les zones
+    │   ├── level_manager.py         # [Melvin] Construit le niveau, simule l'environnement, gère les zones
     │   ├── lighting_engine.py       # [Léo] Shader d'obscurité + passe de lueur additive
     │   ├── map_loader.py            # [Melvin] NOUVEAU — lit le .tmx et le traduit en données neutres
     │   ├── monster_manager.py       # [Inès] Sursis, signaux d'ambiance, traque
@@ -399,14 +402,16 @@ GAMEJAM/
     │   ├── hud.py                   # [Erwan] ATH transparent : coins de l'écran, invite d'interaction
     │   ├── key_icons.py             # [Erwan] NOUVEAU — touches de clavier dessinées (lettres, flèches)
     │   ├── screamer.py              # [Inès] NOUVEAU — jumpscare plein écran quand la créature dévore
-    │   ├── menu_components.py       # [Erwan] Boutons et listes navigables
-    │   └── text_cache.py            # [Erwan] NOUVEAU — draw_text_cached, à utiliser au lieu de arcade.draw_text
+    │   ├── fonts.py                 # [Erwan] NOUVEAU — charge la police pixel (police système en secours)
+    │   ├── logo.py                  # [Erwan] NOUVEAU — charge, rogne et dessine le logo (titre en texte si absent)
+    │   ├── menu_components.py       # [Erwan] Panneaux, tableaux alignés, boutons, titres
+    │   └── text_cache.py            # [Erwan] NOUVEAU — draw_text_cached : cache + police pixel, à utiliser au lieu de arcade.draw_text
     │
     └── views/
+        ├── end_screen.py            # [Inès] NOUVEAU — mise en page commune aux deux écrans de fin
         ├── game_over_view.py        # [Inès] Défaite + statistiques
         ├── game_view.py             # [Melvin] Boucle principale : orchestre tous les modules
-        ├── level_select.py          # [Erwan] Sélection de l'étage
-        ├── main_menu.py             # [Erwan] Accueil, lore, mode de jeu, tableau des scores
+        ├── main_menu.py             # [Erwan] Accueil (logo, lore, mode de jeu, tableau des scores)
         └── victory_view.py          # [Inès] Victoire + statistiques
 ```
 
@@ -427,7 +432,7 @@ python main.py
 Options utiles pendant le développement :
 
 ```bash
-python main.py --level 2                        # demarrer a l'etage 2
+python main.py --skip-menu                       # demarrer la partie sans passer par l'accueil
 python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sans menu
 ```
 
@@ -446,7 +451,7 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
 - Vue de dessus, déplacement animé dans quatre directions, collisions avec les murs.
 - **Caméra fixe par zone** : un écran = une zone de 40x22 tuiles, la caméra
   saute à la zone adjacente quand le joueur franchit une frontière (petit fondu).
-  Chaque étage fait 4 zones. Les frontières de zone sont des murs pleins, percés
+  Le niveau fait 4 zones. Les frontières de zone sont des murs pleins, percés
   d'un seul passage : là où l'on ne peut pas changer d'écran, il y a un mur.
 - **Couloirs étroits** (1 ou 2 tuiles) et quatre salles par zone, où trouver les
   objets.
@@ -461,7 +466,7 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
 - **Les affaires tombent au sol autour du corps** : il n'y a rien à fouiller, on
   les ramasse comme n'importe quel objet. Elles n'émettent aucune lumière — ce
   sont la lueur du cadavre et les torches plantées qui les rendent visibles.
-- **Une seule fiole par étage**, posée à quelques pas du départ. Elle réapparaît
+- **Une seule fiole**, posée à quelques pas du départ. Elle réapparaît
   toujours au même endroit après chaque mort, quelle qu'en soit la cause : on ne
   peut donc jamais en stocker, mais on n'est jamais bloqué non plus.
 - **Beaucoup de torches** semées le long du chemin principal, assez pour
@@ -499,12 +504,17 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
   n'est visible qu'à très courte distance.
 - **Objets** : clés, fioles, torches. Inventaire limité à 2 emplacements.
 - **Portes** : à clé (ouverture définitive) ou commandées par une plaque.
-- **Écrans** : accueil (lore, mode de jeu, tableau des scores local), sélection
-  d'étage, victoire et game over avec statistiques.
+- **Un seul niveau** : atteindre la sortie gagne la partie. Il n'y a ni
+  ascension d'étages ni écran de sélection.
+- **Police pixel** (*Pixelify Sans*, SIL OFL) sur toute l'interface, jeu compris.
+- **Écrans** : accueil (logo, lore, mode de jeu, tableau des scores local),
+  victoire et game over. Les deux écrans de fin partagent la même mise en
+  page (`views/end_screen.py`) : statistiques alignées, puis la balance des
+  morts choisies contre les morts subies.
 - **Modes de jeu** : Exploration (libre), Sursis (8 morts max), Contre-la-montre
   (5 minutes).
 - **Interface sans bandeau** : tout est dessiné en transparence par-dessus le
-  jeu, qui occupe la fenêtre entière. Étage et zone en haut à gauche, temps et
+  jeu, qui occupe la fenêtre entière. Zone courante en haut à gauche, temps et
   morts en haut à droite, inventaire et rappels de touches (icônes de clavier)
   en bas à droite. L'invite « E » n'apparaît que lorsqu'une interaction est
   réellement possible.

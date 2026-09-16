@@ -65,7 +65,7 @@ class HUD:
     # Rendu
     # ------------------------------------------------------------------ #
     def draw(self, player, level, score, whisper: str = "", target=None) -> None:
-        self._draw_floor_and_zone(level)
+        self._draw_zone(level)
         self._draw_run_info(score)
         self._draw_inventory(player)
         self._draw_key_hints(player)
@@ -73,16 +73,18 @@ class HUD:
         self._draw_center_texts(whisper)
 
     # -- haut gauche ---------------------------------------------------- #
-    def _draw_floor_and_zone(self, level) -> None:
+    def _draw_zone(self, level) -> None:
+        """
+        Position du joueur dans le labyrinthe.
+
+        Il n'y a qu'un seul niveau : le numero d'etage n'apprendrait rien. Seule
+        la zone courante est utile, c'est le seul repere du joueur dans le noir.
+        """
         top = C.WINDOW_HEIGHT - C.UI_MARGIN
-        draw_text_shadowed(
-            f"ETAGE {getattr(level, 'floor_number', 1)}",
-            C.UI_MARGIN, top - 16, C.COLOR_TEXT, 17, bold=True,
-        )
         zone_x, zone_y = level.zone
         draw_text_shadowed(
-            f"zone {zone_x + 1}-{zone_y + 1}",
-            C.UI_MARGIN, top - 34, C.COLOR_TEXT_DIM, 11,
+            f"ZONE {zone_x + 1}-{zone_y + 1}",
+            C.UI_MARGIN, top - 16, C.COLOR_TEXT, 17, bold=True,
         )
 
     # -- haut droite ---------------------------------------------------- #
@@ -105,12 +107,18 @@ class HUD:
             anchor_x="right", bold=True,
         )
 
+        # Accord au singulier, et tiret simple : la police pixel de l'interface
+        # ne porte pas le tiret cadratin, qui s'afficherait en caractere manquant.
+        total = stats.deaths_total
         remaining_deaths = score.deaths_remaining()
         if remaining_deaths is None:
-            deaths = f"{stats.deaths_total} morts"
+            deaths = f"{total} mort" + ("s" if total > 1 else "")
             color = C.COLOR_TEXT_DIM
         else:
-            deaths = f"{stats.deaths_total} morts — {remaining_deaths} restantes"
+            deaths = (
+                f"{total} mort" + ("s" if total > 1 else "")
+                + f" - {remaining_deaths} restante" + ("s" if remaining_deaths > 1 else "")
+            )
             color = C.COLOR_DANGER if remaining_deaths <= 2 else C.COLOR_TEXT_DIM
         draw_text_shadowed(deaths, right, top - 34, color, 11, anchor_x="right")
 

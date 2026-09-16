@@ -1,10 +1,14 @@
 # assets/maps/
 
-Les niveaux, au format **Tiled** (`.tmx`), un fichier par étage de la tour, plus
-le tileset du pack Dungeons & Pixels (`Tileset_Dungeon.png` + `.tsx`, importés
-par `tools/import_pack_assets.py`).
+Les niveaux, au format **Tiled** (`.tmx`), plus le tileset du pack Dungeons &
+Pixels (`Tileset_Dungeon.png` + `.tsx`, importés par
+`tools/import_pack_assets.py`).
 
-Les fichiers actuels (`level_test.tmx`, `level_01.tmx`, `level_02.tmx`) sont
+Le jeu ne joue qu'**un seul niveau**, `level_01.tmx` (`C.LEVEL_NAME`) :
+atteindre sa sortie gagne la partie. `level_test.tmx` n'est là que pour itérer
+vite pendant le développement, il n'est jamais joué par une vraie partie.
+
+Les fichiers actuels (`level_test.tmx`, `level_01.tmx`) sont
 générés par `tools/gen_placeholder_maps.py`. Ouvrez-les dans Tiled et redessinez
 par-dessus : le jeu n'a pas besoin d'être modifié.
 Ne relancez plus le générateur une fois vos cartes dessinées, il écrase tout.

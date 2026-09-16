@@ -6,8 +6,8 @@ Description :
 Point d'entrée du jeu.
 
     python main.py                 # lance le jeu depuis l'ecran d'accueil
-    python main.py --level 2       # demarre directement a l'etage 2
-    python main.py --map level_test.tmx --skip-menu   # saute le menu (debug)
+    python main.py --skip-menu     # demarre la partie sans passer par l'accueil
+    python main.py --map level_test.tmx --skip-menu   # autre carte (debug)
 
 Tout le reste vit dans `src/`. Ce fichier ne contient volontairement aucune
 logique de jeu : il crée la fenêtre et affiche la première vue.
@@ -23,10 +23,6 @@ from src import constants as C
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Labyrinth of Shadow")
-    parser.add_argument(
-        "--level", type=int, default=1,
-        help="etage de depart (1 = premier etage)",
-    )
     parser.add_argument(
         "--map", type=str, default=None,
         help="charger une carte precise (ex: level_test.tmx), utile pour tester",
@@ -50,17 +46,12 @@ def main() -> None:
     if args.skip_menu or args.map:
         from src.views.game_view import GameView
 
-        level_names = [args.map] if args.map else None
-        view = GameView(
-            mode=args.mode,
-            level_index=0 if args.map else max(0, args.level - 1),
-            level_names=level_names,
-        )
+        view = GameView(mode=args.mode, level_name=args.map)
         view.setup()
     else:
         from src.views.main_menu import MainMenuView
 
-        view = MainMenuView(level_index=max(0, args.level - 1))
+        view = MainMenuView()
 
     window.show_view(view)
     arcade.run()

@@ -3,19 +3,19 @@ Fichier : victory_view.py
 Auteur : base technique (game jam)
 
 Description :
-Écran de victoire : le joueur a atteint le sommet de la tour.
+Écran de victoire : le joueur a trouvé la sortie du labyrinthe.
 
-Les statistiques racontent la partie, et surtout le rapport entre les morts
-choisies (fioles, pieges) et les morts subies (devore). C'est la lecture la plus
-parlante du theme.
+La mise en page est celle de `end_screen.py`, partagée avec l'écran de défaite.
+Seuls le titre et la phrase de verdict sont propres à la victoire : ils parlent
+du rapport entre les morts choisies et les morts subies, parce que c'est la
+lecture la plus parlante du theme.
 """
 from __future__ import annotations
 
 import arcade
 
 from src import constants as C
-from src.ui.text_cache import draw_text_cached
-from src.ui.menu_components import draw_hint, draw_title
+from src.views.end_screen import draw_end_screen
 
 
 class VictoryView(arcade.View):
@@ -37,24 +37,19 @@ class VictoryView(arcade.View):
 
     def on_draw(self) -> None:
         self.clear()
-        draw_title("TU ES SORTI", C.WINDOW_HEIGHT - 140, 46)
-
-        chosen = self.stats.deaths_by_vial + self.stats.deaths_by_trap
-        draw_text_cached(
-            f"{chosen} morts choisies, {self.stats.deaths_devoured} subies.",
-            C.WINDOW_WIDTH / 2,
-            C.WINDOW_HEIGHT - 190,
+        draw_end_screen(
+            "TU ES SORTI",
             C.COLOR_ACCENT,
-            18,
-            anchor_x="center",
-            italic=True,
+            self._verdict(),
+            C.COLOR_TEXT,
+            self.stats,
         )
 
-        top = C.WINDOW_HEIGHT - 260
-        for index, (label, value) in enumerate(self.stats.as_lines()):
-            y = top - index * 28
-            draw_text_cached(label, C.WINDOW_WIDTH / 2 - 260, y, C.COLOR_TEXT_DIM, 14)
-            draw_text_cached(value, C.WINDOW_WIDTH / 2 + 200, y, C.COLOR_TEXT, 14,
-                             anchor_x="right")
-
-        draw_hint("Entree : retour a l'ecran d'accueil")
+    def _verdict(self) -> str:
+        """Une phrase qui juge la partie, pas un simple decompte."""
+        chosen = self.stats.deaths_by_vial + self.stats.deaths_by_trap
+        if self.stats.deaths_devoured == 0 and chosen > 0:
+            return "Tu n'as jamais ete pris. Chacune de tes morts etait la tienne."
+        if chosen == 0:
+            return "Sorti sans jamais te sacrifier. La tour t'a laisse passer."
+        return f"{chosen} morts choisies, {self.stats.deaths_devoured} subies."

@@ -54,7 +54,9 @@ class DialogBox:
             return
         left = self.center_x - self.width / 2
         bottom = self.center_y - self.height / 2
-        arcade.draw_lbwh_rectangle_filled(left, bottom, self.width, self.height, (14, 14, 20))
+        arcade.draw_lbwh_rectangle_filled(
+            left, bottom, self.width, self.height, C.COLOR_PANEL_FILL
+        )
         arcade.draw_lbwh_rectangle_outline(
             left, bottom, self.width, self.height, C.COLOR_HUD_BORDER, 2
         )

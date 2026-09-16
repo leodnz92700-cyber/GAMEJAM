@@ -17,12 +17,17 @@ Utilisation identique à `arcade.draw_text` :
 
 Pour tout texte affiché PAR-DESSUS le jeu, préférez `draw_text_shadowed` : sans
 ombre portée, un texte clair devient illisible sur une zone éclairée.
+
+C'est aussi ici qu'est appliquée la **police pixel du jeu** (`src/ui/fonts.py`) :
+tout texte qui passe par ce module la reçoit automatiquement, il n'y a rien à
+préciser à l'appel. Un appel peut toujours imposer sa propre `font_name`.
 """
 from __future__ import annotations
 
 import arcade
 
 from src import constants as C
+from src.ui.fonts import ui_font
 
 _CACHE: dict[tuple, arcade.Text] = {}
 
@@ -30,6 +35,10 @@ _CACHE: dict[tuple, arcade.Text] = {}
 def draw_text_cached(text, x: float, y: float, color=(255, 255, 255, 255),
                      font_size: float = 12, **kwargs) -> arcade.Text:
     """Dessine un texte en réutilisant l'objet `Text` associé à cet emplacement."""
+    # La police pixel s'applique a tout le monde, sauf si l'appelant en impose
+    # une autre. `ui_font()` charge le fichier au premier appel, puis se contente
+    # de renvoyer le nom deja connu.
+    kwargs.setdefault("font_name", ui_font())
     key = (
         round(x, 1),
         round(y, 1),

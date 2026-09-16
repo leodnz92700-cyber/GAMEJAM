@@ -32,7 +32,6 @@ class RunStats:
     items_picked: int = 0
     corpses_looted: int = 0
     doors_opened: int = 0
-    floors_cleared: int = 0
     zones_visited: set = field(default_factory=set)
 
     def record_death(self, cause: str) -> None:
@@ -58,7 +57,6 @@ class RunStats:
             ("Objets repris pres d'un ancien corps", str(self.corpses_looted)),
             ("Portes ouvertes", str(self.doors_opened)),
             ("Zones explorees", str(len(self.zones_visited))),
-            ("Etages franchis", str(self.floors_cleared)),
         ]
 
     def to_json(self) -> dict:

@@ -44,7 +44,8 @@ class Runner:
         """
         return [
             (2, "menu", lambda view: self.shot("01_menu")),
-            (3, "aller sur Entrer", lambda view: view.on_key_press(arcade.key.DOWN, 0)),
+            # Le menu ne compte plus que trois lignes (mode / entrer / quitter) :
+            # une seule descente separe le mode du bouton « Entrer dans la tour ».
             (4, "aller sur Entrer", lambda view: view.on_key_press(arcade.key.DOWN, 0)),
             (5, "demarrer la partie", lambda view: view.on_key_press(arcade.key.ENTER, 0)),
             (10, "partie lancee", lambda view: self.shot("02_spawn")),
