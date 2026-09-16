@@ -24,7 +24,7 @@ UI_DIR = ASSETS_DIR / "ui"          # images d'interface (logo), pas du decor
 LOGO_PATH = UI_DIR / "logo.png"     # titre du jeu, dessine sur l'ecran d'accueil
 AUDIO_DIR = ASSETS_DIR / "audio"
 FONTS_DIR = ASSETS_DIR / "fonts"    # police pixel de l'interface (voir src/ui/fonts.py)
-MAPS_DIR = ASSETS_DIR / "maps"
+MAPS_DIR = ROOT_DIR / "map" / "tiled"
 DATA_DIR = ROOT_DIR / "data"
 LEADERBOARD_PATH = DATA_DIR / "leaderboard.json"
 
@@ -213,7 +213,7 @@ GAME_MODES = {
 # d'etages, ni ecran de selection. Atteindre la sortie, c'est gagner la partie.
 # Si un jour la tour reprend plusieurs etages, c'est ici que ca recommence — et
 # il faudra reintroduire un enchainement dans `LevelManager`.
-LEVEL_NAME = "level_01.tmx"
+LEVEL_NAME = "map.tmx"
 TEST_LEVEL = "level_test.tmx"
 
 # --------------------------------------------------------------------------- #
