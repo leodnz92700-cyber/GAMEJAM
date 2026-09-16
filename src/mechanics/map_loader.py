@@ -38,13 +38,13 @@ class MapObject:
 
     layer: str
     type: str
-    name: str = ""
     center_x: float
     center_y: float
     width: float
     height: float
     properties: dict[str, Any] = field(default_factory=dict)
     rotation: float = 0.0
+    name: str = ""
 
     @property
     def position(self) -> tuple[float, float]:
@@ -186,7 +186,7 @@ def load_map(map_name: str) -> LoadedMap:
             center_x, center_y, width, height = _rect_from_shape(tiled_object.shape)
             # Arcade expose la classe Tiled dans `type` ; on retombe sur le nom
             # de l'objet si le level designer a oublié de renseigner la classe.
-            object_type = (getattr(tiled_object, "type", None) or tiled_object.name or "").strip()
+            object_type = (getattr(tiled_object, "class_", None) or getattr(tiled_object, "type", None) or tiled_object.name or "").strip().lower()
             objects.append(
                 MapObject(
                     layer=layer_name,
