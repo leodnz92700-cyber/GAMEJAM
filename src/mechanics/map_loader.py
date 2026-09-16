@@ -209,6 +209,17 @@ def load_map(map_name: str) -> LoadedMap:
             if rot is None:
                 tiled_name = getattr(tiled_object, "name", None)
                 rot = rotations_by_name.get(tiled_name, 0.0) if tiled_name is not None else 0.0
+            
+            # Fix Arcade pytiled_parser ignoring rotation for object coordinates
+            if rot:
+                if abs(rot - 90) < 0.1:
+                    center_x -= height
+                elif abs(rot - 180) < 0.1:
+                    center_x -= width
+                    center_y += height
+                elif abs(rot - 270) < 0.1 or abs(rot + 90) < 0.1:
+                    center_y += width
+
             objects.append(
                 MapObject(
                     layer=layer_name,
