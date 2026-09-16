@@ -45,7 +45,7 @@ class HUD:
         # L'invite d'interaction doit être centrée AVEC sa touche : il faut donc
         # connaître la largeur du texte, d'où un objet Text conservé.
         self._prompt = arcade.Text(
-            "", 0, 0, C.COLOR_TEXT, 14, anchor_y="baseline"
+            "", 0, 0, C.COLOR_TEXT, 22, anchor_y="center"
         )
 
     def show_message(self, text: str, duration: float = 2.8) -> None:
@@ -84,7 +84,7 @@ class HUD:
         zone_x, zone_y = level.zone
         draw_text_shadowed(
             f"ZONE {zone_x + 1}-{zone_y + 1}",
-            C.UI_MARGIN, top - 16, C.COLOR_TEXT, 17, bold=True,
+            C.UI_MARGIN, top - 20, C.COLOR_TEXT, 22, bold=True,
         )
 
     # -- haut droite ---------------------------------------------------- #
@@ -103,7 +103,7 @@ class HUD:
             else C.COLOR_TEXT
         )
         draw_text_shadowed(
-            f"{minutes:02d}:{secs:02d}", right, top - 16, time_color, 17,
+            f"{minutes:02d}:{secs:02d}", right, top - 20, time_color, 22,
             anchor_x="right", bold=True,
         )
 
@@ -120,7 +120,7 @@ class HUD:
                 + f" - {remaining_deaths} restante" + ("s" if remaining_deaths > 1 else "")
             )
             color = C.COLOR_DANGER if remaining_deaths <= 2 else C.COLOR_TEXT_DIM
-        draw_text_shadowed(deaths, right, top - 34, color, 11, anchor_x="right")
+        draw_text_shadowed(deaths, right, top - 44, color, 14, anchor_x="right")
 
     # -- bas droite : inventaire ---------------------------------------- #
     def _inventory_geometry(self, player) -> tuple[float, float, float]:
@@ -135,7 +135,7 @@ class HUD:
         left, bottom, top = self._inventory_geometry(player)
         draw_text_shadowed(
             "INVENTAIRE",
-            C.WINDOW_WIDTH - C.UI_MARGIN, top + 10, C.COLOR_TEXT_DIM, 11,
+            C.WINDOW_WIDTH - C.UI_MARGIN, top + 12, C.COLOR_TEXT_DIM, 14,
             anchor_x="right",
         )
 
@@ -181,13 +181,14 @@ class HUD:
         for key, label, available in (
             ("F", "planter une torche", player.has_torch()),
             ("R", "boire la fiole", player.has_vial()),
+            ("O", "objectifs", True),
         ):
             alpha = 255 if available else DIM_ALPHA
             draw_keycap(right - C.UI_KEYCAP_SIZE / 2, row_y, key, alpha=alpha)
             draw_text_shadowed(
                 label,
                 right - C.UI_KEYCAP_SIZE - 8, row_y - 4,
-                (*C.COLOR_TEXT_DIM, alpha), 11, anchor_x="right",
+                (*C.COLOR_TEXT_DIM, alpha), 14, anchor_x="right",
             )
             row_y += C.UI_ROW_HEIGHT
 
@@ -202,13 +203,13 @@ class HUD:
         keycap_width = C.UI_KEYCAP_SIZE + 10 if target.actionable else 0
         total = keycap_width + self._prompt.content_width
         left = (C.WINDOW_WIDTH - total) / 2
-        row_y = C.UI_MARGIN + 52
+        row_y = C.WINDOW_HEIGHT / 2
 
         if target.actionable:
             draw_keycap(left + C.UI_KEYCAP_SIZE / 2, row_y, "E")
         # Ombre portée, puis le texte : même principe que draw_text_shadowed.
         self._prompt.x = left + keycap_width + 1
-        self._prompt.y = row_y - 6
+        self._prompt.y = row_y
         original_color = self._prompt.color
         self._prompt.color = C.COLOR_TEXT_SHADOW
         self._prompt.draw()
@@ -222,12 +223,12 @@ class HUD:
         if self.message:
             draw_text_shadowed(
                 self.message,
-                C.WINDOW_WIDTH / 2, C.UI_MARGIN + 92, C.COLOR_TEXT, 14,
+                C.WINDOW_WIDTH / 2, C.UI_MARGIN + 92, C.COLOR_TEXT, 18,
                 anchor_x="center",
             )
         if whisper:
             draw_text_shadowed(
                 whisper,
-                C.WINDOW_WIDTH / 2, C.WINDOW_HEIGHT - C.UI_MARGIN - 16,
-                C.COLOR_DANGER, 15, anchor_x="center", italic=True,
+                C.WINDOW_WIDTH / 2, C.WINDOW_HEIGHT - C.UI_MARGIN - 32,
+                C.COLOR_DANGER, 22, anchor_x="center", bold=True,
             )

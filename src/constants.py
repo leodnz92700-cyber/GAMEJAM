@@ -118,7 +118,7 @@ MONSTER_FPS = 6.0
 # --------------------------------------------------------------------------- #
 # Aucun compte à rebours n'est affiché : ces durées ne servent qu'à déclencher
 # les signaux sonores. Le joueur doit apprendre à les lire.
-MONSTER_RELEASE_TIME = 48.0           # secondes avant que la bête soit lâchée
+MONSTER_RELEASE_TIME = 60.0           # 1 minute comme demandé
 MONSTER_SPEED = 165.0                 # légèrement plus lente que le joueur
 MONSTER_KILL_RADIUS = 26.0
 MONSTER_REPATH_INTERVAL = 0.45        # recalcul du chemin vers le joueur
