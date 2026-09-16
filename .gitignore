@@ -27,3 +27,5 @@ dist/
 
 # Logs et profils
 *.log
+# Scores locaux : propres a chaque machine, ne pas versionner (conflits garantis)
+data/leaderboard.json
