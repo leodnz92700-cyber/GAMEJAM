@@ -30,10 +30,19 @@ Ne relancez plus le générateur une fois vos cartes dessinées, il écrase tout
 
 **Calques de tuiles**
 
-| Calque  | Rôle                                                    |
-|---------|---------------------------------------------------------|
-| `Floor` | le sol, purement décoratif                              |
-| `Walls` | les murs : tout ce qui est dessiné ici bloque le joueur   |
+| Calque         | Rôle                                                            |
+|----------------|-----------------------------------------------------------------|
+| `Floor`        | le sol, purement décoratif                                      |
+| `Walls`        | les murs : tout ce qui est dessiné ici bloque le joueur           |
+| `Shadow_layer` | **optionnel**, décor pur : dessiné juste au-dessus du sol         |
+| `Props_layer`  | **optionnel**, décor pur : dessiné juste au-dessus des murs       |
+
+`Shadow_layer` et `Props_layer` ne bloquent jamais le joueur et ne sont lus par
+aucune logique de jeu : c'est `map_loader.py` qui les charge (s'ils existent) et
+`game_view._draw_world()` qui les dessine, dans le même ordre que Tiled les
+empile déjà (ombres sous le décor, props par-dessus les murs). Une carte qui
+n'a pas ces calques continue de fonctionner normalement : ils sont chargés en
+liste vide si absents.
 
 **Calques d'objets** — c'est la **classe** de l'objet Tiled (champ `Class`, ou
 `Type` dans les anciennes versions) qui détermine ce qui est créé. Sauf mention

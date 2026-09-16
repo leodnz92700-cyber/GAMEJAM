@@ -72,6 +72,43 @@ def _load_image(name: str) -> Image.Image:
     return Image.open(C.SPRITES_DIR / name).convert("RGBA")
 
 
+def art_offset(name: str, tile_size: float = None) -> tuple[float, float]:
+    """
+    Décalage (offset_x, offset_y) à donner à un sprite posé à plat sur une
+    tuile, pour que son dessin RÉEL (la zone opaque du PNG, pas tout le
+    canvas) soit centré horizontalement et pose sa base sur le bas de la
+    tuile -- quel que soit le padding transparent laissé dans le fichier.
+
+    Plusieurs images du pack ont un canvas plus grand que le dessin qu'elles
+    contiennent (marge laissée pour une variante différente à la même
+    taille, par exemple une porte ouverte qui balaie plus large qu'une porte
+    fermée). Prendre le centre du CANVAS comme point de référence, comme le
+    fait Arcade par défaut, décale alors visiblement le sprite par rapport à
+    ce qui l'entoure dans Tiled -- c'est ce qui produisait le décalage des
+    portes par rapport aux murs voisins. Ce calcul se base sur le dessin
+    réel plutôt que sur les dimensions du fichier.
+
+    Axe Y vers le haut, comme pour les boîtes de collision (voir plus haut).
+    `tile_size` par défaut à `C.TILE_SIZE` : la base du dessin est posée sur
+    le bas d'une tuile de cette hauteur.
+    """
+    if tile_size is None:
+        tile_size = C.TILE_SIZE
+    image = _load_image(name)
+    bbox = image.getbbox()
+    if bbox is None:          # image entièrement transparente : rien à corriger
+        return 0.0, 0.0
+    left, top, right, bottom = bbox
+
+    art_center_x = (left + right) / 2
+    offset_x = image.width / 2 - art_center_x
+
+    art_bottom_local = image.height / 2 - bottom      # Y vers le haut
+    offset_y = -tile_size / 2 - art_bottom_local
+
+    return offset_x, offset_y
+
+
 def lift_art(frame: Image.Image, lift: int) -> Image.Image:
     """
     Remonte le dessin au-dessus de son point de collision.

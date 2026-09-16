@@ -59,6 +59,12 @@ class LoadedMap:
     tile_map: arcade.TileMap
     floor_list: arcade.SpriteList
     wall_list: arcade.SpriteList
+    # Calques de decor purement visuels (aucune collision, aucune logique) :
+    # Shadow_layer se dessine juste au-dessus du sol, Props_layer juste
+    # au-dessus des murs -- c'est l'ordre dans lequel Tiled les empile deja.
+    # Absents des cartes qui n'ont pas encore ces calques (SpriteList vide).
+    shadow_list: arcade.SpriteList
+    props_list: arcade.SpriteList
     objects: list[MapObject]
     width_tiles: int
     height_tiles: int
@@ -179,6 +185,9 @@ def load_map(map_name: str) -> LoadedMap:
 
     wall_list = tile_map.sprite_lists.get("Walls") or tile_map.sprite_lists.get("Walls_layer", arcade.SpriteList(use_spatial_hash=True))
     floor_list = tile_map.sprite_lists.get("Floor") or tile_map.sprite_lists.get("Base_layer", arcade.SpriteList())
+    # Calques de decoration, optionnels : toutes les cartes n'en ont pas.
+    shadow_list = tile_map.sprite_lists.get("Shadow_layer", arcade.SpriteList())
+    props_list = tile_map.sprite_lists.get("Props_layer", arcade.SpriteList())
 
     import xml.etree.ElementTree as ET
     rotations_by_id = {}
@@ -243,6 +252,8 @@ def load_map(map_name: str) -> LoadedMap:
         tile_map=tile_map,
         floor_list=floor_list,
         wall_list=wall_list,
+        shadow_list=shadow_list,
+        props_list=props_list,
         objects=objects,
         width_tiles=tile_map.width,
         height_tiles=tile_map.height,
