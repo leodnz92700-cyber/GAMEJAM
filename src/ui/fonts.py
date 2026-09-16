@@ -49,10 +49,11 @@ def ui_font() -> str:
     global _LOADED
     if _LOADED is None:
         _LOADED = ""
-        path = C.FONTS_DIR / FONT_FILE
+        # On va chercher la vraie police pixelisée d'Arcade (Kenney Mini)
+        path = ":system:fonts/ttf/Kenney/Kenney_Mini.ttf"
         try:
             arcade.load_font(path)
-            _LOADED = UI_FONT_NAME
-        except Exception as error:      # fichier absent ou illisible
-            print(f"[fonts] {path.name} indisponible ({error}), police systeme.")
+            _LOADED = "Kenney Mini"
+        except Exception as error:
+            print(f"[fonts] Impossible de charger Kenney Mini ({error}), police systeme.")
     return _LOADED

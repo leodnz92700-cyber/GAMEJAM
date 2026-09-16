@@ -34,7 +34,6 @@ from src.mechanics.level_manager import LevelManager
 from src.mechanics.lighting_engine import LightingEngine
 from src.mechanics.monster_manager import MonsterManager
 from src.mechanics.score_manager import ScoreManager
-from src.ui.dialog_box import DialogBox
 from src.ui.hud import HUD
 from src.ui.screamer import Screamer
 
@@ -67,11 +66,6 @@ class GameView(arcade.View):
 
         self.hud = HUD()
         self.screamer = Screamer()
-        # Placé en haut de l'écran : au centre, il masquerait le joueur et la
-        # petite zone éclairée autour de lui.
-        self.dialog = DialogBox(
-            C.WINDOW_WIDTH / 2, C.WINDOW_HEIGHT - 110, 700, 64, font_size=15
-        )
 
         # Caméra du monde : cadrée sur la zone courante, jamais sur le joueur.
         # Une zone occupe exactement l'écran, il n'y a donc pas de bandeau.
@@ -115,7 +109,7 @@ class GameView(arcade.View):
         # Les touches ne sont plus rappelées ici : l'ATH les affiche en
         # permanence en bas à droite, et l'invite « J » apparaît toute seule
         # quand il y a quelque chose à faire.
-        self.dialog.show(
+        self.hud.show_message(
             "Tu te reveilles dans le noir. Quelque part, il y a une sortie.",
             duration=4.5,
         )
@@ -151,9 +145,9 @@ class GameView(arcade.View):
         if self.finished:
             return
 
-        self.score.tick(delta_time)
         self.hud.update(delta_time)
-        self.dialog.update(delta_time)
+        
+        self.score.tick(delta_time)
         # Le fond sonore du jeu est le SILENCE : pas de nappe continue, juste
         # une goutte d'eau ou un grincement de temps en temps. C'est ce silence
         # qui rend audibles les grognements de la creature.
@@ -357,6 +351,10 @@ class GameView(arcade.View):
                 self._die(C.DEATH_VIAL)
             else:
                 self.hud.show_message("Tu n'as pas de fiole. Cherche un piege.")
+        elif key == arcade.key.O:
+            from src.views.objectives_view import ObjectivesView
+            self.keys_down.clear()
+            self.window.show_view(ObjectivesView(self))
 
     def on_key_release(self, key: int, modifiers: int) -> None:
         self.keys_down.discard(key)
@@ -389,7 +387,6 @@ class GameView(arcade.View):
                 self.monster_manager.whisper,
                 self.interaction_target,
             )
-            self.dialog.draw()
 
     def _draw_world(self) -> None:
         """
