@@ -180,13 +180,27 @@ def load_map(map_name: str) -> LoadedMap:
     wall_list = tile_map.sprite_lists.get("Walls") or tile_map.sprite_lists.get("Walls_layer", arcade.SpriteList(use_spatial_hash=True))
     floor_list = tile_map.sprite_lists.get("Floor") or tile_map.sprite_lists.get("Base_layer", arcade.SpriteList())
 
+    import xml.etree.ElementTree as ET
+    rotations = {}
+    try:
+        tree = ET.parse(str(path))
+        for obj in tree.iter("object"):
+            obj_id = obj.get("id")
+            rot = obj.get("rotation")
+            if obj_id and rot:
+                rotations[int(obj_id)] = float(rot)
+    except Exception:
+        pass
+
     objects: list[MapObject] = []
     for layer_name, tiled_objects in tile_map.object_lists.items():
         for tiled_object in tiled_objects:
             center_x, center_y, width, height = _rect_from_shape(tiled_object.shape)
-            # Arcade expose la classe Tiled dans `type` ; on retombe sur le nom
-            # de l'objet si le level designer a oublié de renseigner la classe.
             object_type = (getattr(tiled_object, "class_", None) or getattr(tiled_object, "type", None) or tiled_object.name or "").strip().lower()
+            
+            # Retrieve rotation by looking up the Tiled object's ID if possible
+            tiled_id = getattr(tiled_object, "id", None)
+            rot = rotations.get(tiled_id, 0.0) if tiled_id is not None else 0.0
             objects.append(
                 MapObject(
                     layer=layer_name,
@@ -197,7 +211,7 @@ def load_map(map_name: str) -> LoadedMap:
                     width=width,
                     height=height,
                     properties=dict(tiled_object.properties or {}),
-                    rotation=getattr(tiled_object, "rotation", 0.0) or getattr(tiled_object.shape, "rotation", 0.0) or 0.0,
+                    rotation=rot,
                 )
             )
 

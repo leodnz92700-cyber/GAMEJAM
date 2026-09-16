@@ -71,14 +71,15 @@ LORE_FONT_SIZE = 13
 
 # --- La grille de l'écran --------------------------------------------------- #
 MARGIN = 44
-PANELS_TOP = 540            # les deux colonnes commencent ici
+PANELS_TOP = C.WINDOW_HEIGHT - 164            # les deux colonnes commencent ici
 PANELS_BOTTOM = 40          # ... et finissent ici, pres du bas de la fenetre
 COLUMN_GAP = 32
 
 # Le logo occupe la bande du haut. Le dessin est un bandeau tres etale
-# (1160 x 181 une fois rogne) : c'est sa HAUTEUR qui limite l'echelle, elargir
+# (1100x160), on le contraint a rentrer dans sa boite : si on rapetisse l'ecran
+# il diminue (pour eviter de chevaucher les panneaux), mais si on l'agrandit
 # la boite ne le grandit plus.
-LOGO_CENTER_Y = 626
+LOGO_CENTER_Y = C.WINDOW_HEIGHT - 78
 LOGO_MAX_WIDTH = 1000
 LOGO_MAX_HEIGHT = 130
 

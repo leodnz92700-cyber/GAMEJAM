@@ -96,12 +96,11 @@ class Level:
                 self.exit_rect = map_object.position
 
             elif kind in ("key", "vial", "torch", "shield", "potion", "object"):
-                self.item_list.append(
-                    ItemSprite(make_item_from_map_object(map_object), *map_object.position)
-                )
-                if kind in C.RESPAWNING_ITEM_TYPES:
+                item = make_item_from_map_object(map_object)
+                self.item_list.append(ItemSprite(item, *map_object.position))
+                if item.type in C.RESPAWNING_ITEM_TYPES:
                     self.unique_item_spawns.append(
-                        (kind, map_object.position, dict(map_object.properties))
+                        (item.type, map_object.position, dict(map_object.properties))
                     )
 
             elif kind in ("door_key", "door_plate", "door"):

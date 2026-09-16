@@ -96,6 +96,11 @@
  <objectgroup id="3" name="Entities">
   <object id="7" name="End" type="end" x="1408" y="320" width="32" height="32"/>
   <object id="8" name="PNJ" type="pnj" x="241.333" y="191.667">
+   <properties>
+    <property name="key_id" value="door_final"/>
+    <property name="lines" value="Rends-moi mon bouclier...|J'en ai absolument besoin !"/>
+    <property name="wants_item" value="shield"/>
+   </properties>
    <point/>
   </object>
   <object id="11" name="Spike1" type="spike" x="96" y="1088" width="32" height="32"/>
@@ -207,7 +212,7 @@
   </object>
   <object id="49" name="Door_final" type="door" x="1408" y="544" width="32" height="32" rotation="90">
    <properties>
-    <property name="groupe" value="door_final"/>
+    <property name="key_id" value="door_final"/>
    </properties>
   </object>
   <object id="50" name="Potion" type="potion" x="304.5" y="1024.5">
