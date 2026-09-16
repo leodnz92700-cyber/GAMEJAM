@@ -142,14 +142,18 @@
   </object>
  </objectgroup>
  <objectgroup id="15" name="Items">
+  <object id="999" name="shield" class="shield" type="shield" x="416" y="1184" width="32" height="32"/>
+
   <object id="8" name="vial" class="vial" type="vial" x="384" y="1184" width="32" height="32">
    <properties>
     <property name="unique" type="bool" value="true"/>
    </properties>
   </object>
-  <object id="9" name="key" class="key" type="key" x="768" y="448" width="32" height="32">
+  <object id="9" name="npc" class="npc" type="npc" x="768" y="448" width="32" height="32">
    <properties>
     <property name="key_id" type="string" value="key_1"/>
+    <property name="wants_item" type="string" value="shield"/>
+    <property name="lines" type="string" value="Rends-moi mon bouclier...|J'en ai absolument besoin !"/>
    </properties>
   </object>
   <object id="10" name="torch" class="torch" type="torch" x="224" y="992" width="32" height="32"/>
