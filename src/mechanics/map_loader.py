@@ -169,11 +169,14 @@ def load_map(map_name: str) -> LoadedMap:
     tile_map = arcade.load_tilemap(
         str(path),
         scaling=1.0,
-        layer_options={"Walls": {"use_spatial_hash": True}},
+        layer_options={
+            "Walls": {"use_spatial_hash": True},
+            "Walls_layer": {"use_spatial_hash": True},
+        },
     )
 
-    wall_list = tile_map.sprite_lists.get("Walls", arcade.SpriteList(use_spatial_hash=True))
-    floor_list = tile_map.sprite_lists.get("Floor", arcade.SpriteList())
+    wall_list = tile_map.sprite_lists.get("Walls") or tile_map.sprite_lists.get("Walls_layer", arcade.SpriteList(use_spatial_hash=True))
+    floor_list = tile_map.sprite_lists.get("Floor") or tile_map.sprite_lists.get("Base_layer", arcade.SpriteList())
 
     objects: list[MapObject] = []
     for layer_name, tiled_objects in tile_map.object_lists.items():
