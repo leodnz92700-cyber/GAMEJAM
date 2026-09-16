@@ -96,7 +96,6 @@ class Arrow(arcade.Sprite):
         self.direction = direction
         self.speed = speed
         self.lifetime = 0.0
-        self.travelled = 0.0        # distance parcourue : la flèche a une portée
         self.angle = {
             (1.0, 0.0): 0, (-1.0, 0.0): 180, (0.0, 1.0): -90, (0.0, -1.0): 90
         }.get(direction, 0)
@@ -105,7 +104,6 @@ class Arrow(arcade.Sprite):
         step = self.speed * delta_time
         self.center_x += self.direction[0] * step
         self.center_y += self.direction[1] * step
-        self.travelled += step
         self.lifetime += delta_time
 
     @property
@@ -113,12 +111,13 @@ class Arrow(arcade.Sprite):
         """
         La flèche a fini sa course.
 
-        Sans portée, un tir qui sort par une ouverture traverserait tout l'étage
-        et tuerait le joueur trois salles plus loin, sans qu'il ait jamais vu
-        l'archer : une mort incompréhensible, donc injuste. Le danger doit rester
-        dans la salle du tireur.
+        Décision d'équipe : une flèche ne s'arrête QUE sur un obstacle — mur,
+        cadavre, joueur. Elle n'a plus de portée maximale : tant que le couloir
+        est dégagé, elle continue. `ARROW_LIFETIME` ne reste qu'un garde-fou
+        technique, pour qu'une flèche partie hors de la carte finisse par être
+        retirée de la liste au lieu de voler indéfiniment.
         """
-        return self.travelled > C.ARROW_RANGE or self.lifetime > C.ARROW_LIFETIME
+        return self.lifetime > C.ARROW_LIFETIME
 
 
 class SkeletonArcher(arcade.Sprite):

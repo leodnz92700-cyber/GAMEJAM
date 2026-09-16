@@ -24,7 +24,7 @@ from dataclasses import dataclass
 import arcade
 
 from src import constants as C
-from src.entities.items import Item
+from src.entities.items import Item, ItemSprite
 
 
 @dataclass
@@ -33,7 +33,7 @@ class InteractionTarget:
     Ce que le joueur peut faire, ici et maintenant.
 
     Cet objet est la source de vérité UNIQUE partagée par l'ATH et par l'action :
-    l'invite « E » ne s'affiche que si `find_target` renvoie quelque chose, et
+    l'invite « J » ne s'affiche que si `find_target` renvoie quelque chose, et
     appuyer sur E exécute exactement ce que l'invite annonçait. Impossible que
     l'affichage et le comportement divergent.
     """
@@ -91,7 +91,7 @@ class InteractionManager:
         Ce que le joueur peut faire à sa position actuelle, ou None.
 
         Appelé à chaque frame par l'ATH : c'est ce qui permet de n'afficher
-        l'invite « E » qu'au moment où une interaction est réellement à portée,
+        l'invite « J » qu'au moment où une interaction est réellement à portée,
         au lieu d'un rappel de touches permanent.
         """
         x, y = player.position
@@ -133,14 +133,14 @@ class InteractionManager:
                 actionable=has_key,
             )
 
-        # 3. Parler à un PNJ.
+        # 3. Parler à un PNJ. L'invite annonce le troc dès qu'il est possible :
+        #    sans l'objet, le PNJ se contente de le réclamer.
         npc = _nearest(level.npc_list, x, y, radius + 12)
         if npc is not None:
             prompt = "Parler"
-            if npc.wants_item and not npc.satisfied:
+            if npc.wants_item and player.inventory.find(npc.wants_item):
                 item_name = C.ITEM_PHRASES.get(npc.wants_item, npc.wants_item)
-                if player.inventory.find(npc.wants_item):
-                    prompt = f"Donner {item_name}"
+                prompt = f"Donner {item_name}"
             return InteractionTarget(kind="npc", sprite=npc, prompt=prompt)
 
         return None
@@ -163,33 +163,53 @@ class InteractionManager:
         if target.kind == "door":
             return self._open_door(player, level, target.sprite)
             
-        npc = target.sprite
-        if npc.wants_item and not npc.satisfied:
-            item = player.inventory.find(npc.wants_item)
-            if item is None:
-                return npc.next_line()
-            player.inventory.remove(item)
-            npc.satisfied = True
-            
-            # Create the key
-            key_id = getattr(npc, "properties", {}).get("key_id")
-            key_item = Item(C.ITEM_KEY, {"key_id": key_id} if key_id else {})
-            from src.entities.items import ItemSprite
-            
-            # NPC change de dialogue pour remercier le joueur
-            npc.lines = ["Merci pour mon bouclier !", "Tiens, prends cette cle en echange.", "Fais attention a toi..."]
-            npc.line_index = 0
-            
-            if not player.inventory.is_full:
-                player.pick_up(key_item)
-                self.audio.play_item_pickup(C.ITEM_KEY)
-                return npc.next_line()
-            else:
-                sprite = ItemSprite(key_item, npc.center_x, npc.center_y - 20)
-                level.item_list.append(sprite)
-                return npc.next_line()
-                
-        return npc.next_line()
+        return self._talk(player, level, target.sprite)
+
+    # ------------------------------------------------------------------ #
+    # PNJ : le troc en deux temps
+    # ------------------------------------------------------------------ #
+    def _talk(self, player, level, npc) -> str:
+        """
+        Dialogue et échange, REJOUABLE autant de fois que le joueur le veut.
+
+        Ce que dit le PNJ ne dépend que de ce que le joueur porte à cet instant :
+          - sans l'objet réclamé, il le RÉCLAME (ses répliques de la carte) ;
+          - avec l'objet, il le prend et rend une CLÉ en disant d'aller s'en
+            servir.
+
+        Rien n'est mémorisé : revenir avec un second bouclier redonne une seconde
+        clé. C'est cohérent avec la duplication des objets à la mort — les clés
+        se multiplient comme le reste, et le joueur peut s'en faire un stock au
+        prix d'un aller-retour. C'est aussi ce qui garantit qu'une clé dévorée
+        par la créature est toujours récupérable.
+
+        La clé est remise même le sac plein : elle tombe alors aux pieds du PNJ,
+        plutôt que de disparaître parce que le joueur avait deux torches sur lui.
+        """
+        if not npc.wants_item:
+            return npc.next_line()
+
+        item = player.inventory.find(npc.wants_item)
+        if item is None:
+            # Il réclame. Si la carte n'a pas écrit de réplique, on en fabrique
+            # une : le joueur doit toujours comprendre ce qu'on attend de lui.
+            if npc.lines == ["..."]:
+                wanted = C.ITEM_PHRASES.get(npc.wants_item, npc.wants_item)
+                return f"Va me chercher {wanted}, et je te donnerai une cle."
+            return npc.next_line()
+
+        player.inventory.remove(item)
+        key_id = getattr(npc, "properties", {}).get("key_id")
+        key_item = Item(C.ITEM_KEY, {"key_id": key_id} if key_id else {})
+        if player.inventory.is_full:
+            # Garde-fou : l'objet est retire AVANT que la cle soit rendue, donc
+            # avec un seul objet echange contre un seul il reste toujours une
+            # place. Ce cas ne sert que si un PNJ rend un jour plus d'un objet.
+            level.item_list.append(ItemSprite(key_item, npc.center_x, npc.center_y - 20))
+            return "Ton sac est plein : il pose la cle a tes pieds. Va t'en servir."
+        player.pick_up(key_item)
+        self.audio.play_item_pickup(C.ITEM_KEY)
+        return "Voila ta cle. Va t'en servir sur la porte."
 
     def _pick_up(self, player, item_sprite) -> str:
         item = item_sprite.item
@@ -227,6 +247,26 @@ class InteractionManager:
         self.score.stats.torches_placed += 1
         self.audio.play("torch_use")
         return "Torche plantee. Cette zone restera eclairee."
+
+    # ------------------------------------------------------------------ #
+    # Lacher un objet
+    # ------------------------------------------------------------------ #
+    def drop_item(self, player, level) -> str:
+        """
+        Lache le PREMIER objet du sac, aux pieds du joueur.
+
+        Il n'y a volontairement aucune selection d'objet : l'inventaire est
+        minuscule et une case a choisir, dans le noir, coute plus au joueur
+        qu'elle ne lui rend. L'objet redevient un objet au sol ordinaire, donc
+        ramassable — rien n'est jamais detruit, le niveau reste finissable.
+        """
+        if not player.inventory.items:
+            return "Ton sac est vide."
+        item = player.inventory.items[0]
+        player.inventory.remove(item)
+        level.place_item_near(player.center_x, player.center_y, item)
+        self.audio.play_item_pickup(item.type)
+        return f"Tu laisses {item.phrase} au sol."
 
     # ------------------------------------------------------------------ #
     # Sacrifice

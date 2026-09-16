@@ -22,8 +22,10 @@ seule horloge :
    continu à partir du palier « close ». Elle est volontairement rare et
    discrète : c'est un fond permanent, quelques décibels de trop et elle passe
    de « le personnage a peur » à « quelqu'un souffle dans le micro » ;
-3. **la musique de poursuite**, qui démarre quand la créature est proche — donc
-   *avant* qu'elle ne soit visible.
+Il y a eu un troisième signal, une **musique de poursuite** déclenchée à
+l'approche de la créature. Elle a été **retirée à l'écoute** : dans le noir,
+sous le halètement et les grognements, on ne l'entendait pratiquement pas. Le
+fichier `monster/monster_chase.wav` est toujours là mais n'est plus chargé.
 
 C'est aussi pour cela qu'il n'y a **pas de nappe de fond** : le fond sonore du
 jeu est le silence, troué de loin en loin par une goutte d'eau ou un
@@ -59,8 +61,7 @@ grincement. Une nappe continue noierait les trois signaux ci-dessus.
 | `alert_close` | `monster/alerts/near.wav` | palier 3 — « Des pas courent dans le noir. » |
 | `alert_released` | `monster/alerts/now.wav` | palier 4 — « Elle est la. » |
 | `monster_released` | `monster/kill_sound.wav` | **superposé** à `alert_released` : le sursis est fini |
-| `monster_chase` | `monster/monster_chase.wav` | en boucle tant que la créature est à moins de 340 px |
-| `monster_kill` | `monster/final_timer.wav` | le jumpscare : le joueur est dévoré |
+| `monster_kill` | `monster/final_timer.wav` | le jumpscare : le joueur est dévoré. Le fichier a été **rogné en tête** (voir ci-dessous) |
 | `victory` | `misc/victory.wav` | écran de victoire |
 | `game_over` | `misc/game_over.wav` | écran de défaite |
 
@@ -119,6 +120,10 @@ pas effacer une vraie livraison.
 
 ## Fichiers qui ne servent plus
 
+`monster/monster_chase.wav` n'est plus chargé depuis le retrait de la musique
+de poursuite, et `ambiance/squeak_old.wav` est la version précédente du
+grincement.
+
 Les placeholders historiques de la racine (`ambience_drone.wav`, `growl_far.wav`,
 `scratch.wav`, `steps_close.wav`, `heartbeat.wav`, `devoured.wav`,
 `death_vial.wav`, `door_open.wav`, `torch_place.wav`, `plate_click.wav`,
@@ -143,7 +148,8 @@ niveau de sortie, et le coefficient ramène le fichier à ce niveau.
 | `discret` | bas | pièges, plaques, gouttes, grincements |
 | `normal` | moyen | ramasser, ouvrir, planter, clic de menu |
 | `marquant` | le plus fort | alertes, cri de douleur, jumpscare, fin de partie |
-| `boucle` | bas | respiration, poursuite, musique — ça fatigue vite |
+| `boucle` | bas | musique du menu — ça fatigue vite |
+| `souffle` | le plus bas de tous | la respiration : un fond permanent, elle passe sous tout |
 
 ```bash
 .venv/bin/python tools/check_audio_levels.py
@@ -193,7 +199,12 @@ de -3 dBFS) plutôt que de compter sur une nouvelle réamplification.
   suite) : il a dû être recoupé à 0,9 s, sans quoi la plaque déclenchait un son
   de 23 s à chaque pas dessus. Un bruitage d'interaction tient en moins d'une
   seconde.
-- Les sons qui bouclent (`breathing`, `monster_chase`, `menu_music`) doivent
-  boucler **proprement** : pas de blanc ni de claquement aux extrémités.
+- Les sons qui bouclent (`breathing`, `menu_music`) doivent boucler
+  **proprement** : pas de blanc ni de claquement aux extrémités.
+- **Pas de silence en tête.** Un son de jeu se déclenche sur un évènement précis
+  et doit attaquer tout de suite. `final_timer.wav` commençait par **1,04 s de
+  silence** : le cri du jumpscare arrivait alors que l'éclair blanc et la gueule
+  étaient déjà passés (la mise en scène complète ne dure que 1,4 s). Il a fallu
+  le rogner. Vérifiez vos prises avant de les livrer.
 - `key/get.wav` et `torch/get.wav` sont pour l'instant **le même fichier**
   (octet pour octet) : la clé et la torche sonnent pareil au ramassage.

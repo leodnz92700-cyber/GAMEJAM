@@ -19,9 +19,9 @@ Deux règles de game design à respecter :
      joueur ne dispose que des signaux sonores et du vacillement des torches. Le
      seul chronomètre autorisé est celui du mode « Contre-la-montre », qui est
      une règle de mode, pas la créature ;
-  2. l'invite « E » n'apparaît que lorsqu'une interaction est réellement à
+  2. l'invite « J » n'apparaît que lorsqu'une interaction est réellement à
      portée (voir `mechanics/interaction_manager.find_target`). Pas de rappel de
-     touche permanent : si le joueur voit « E », c'est qu'il y a quelque chose.
+     touche permanent : si le joueur voit « J », c'est qu'il y a quelque chose.
 """
 from __future__ import annotations
 
@@ -166,7 +166,8 @@ class HUD:
     # -- bas droite : rappels de touches, au-dessus de l'inventaire ------ #
     def _draw_key_hints(self, player) -> None:
         """
-        Colonne discrète : boire la fiole, planter une torche.
+        Colonne discrète, de bas en haut : planter une torche, boire la fiole,
+        jeter le premier objet du sac.
 
         Une touche dont l'action n'est pas disponible est grisée plutôt que
         masquée : le joueur apprend qu'elle existe avant même d'avoir l'objet.
@@ -179,8 +180,9 @@ class HUD:
         row_y = top + 24 + C.UI_ROW_HEIGHT / 2        # au-dessus du titre INVENTAIRE
 
         for key, label, available in (
-            ("F", "planter une torche", player.has_torch()),
-            ("R", "boire la fiole", player.has_vial()),
+            ("L", "planter une torche", player.has_torch()),
+            ("K", "boire la fiole", player.has_vial()),
+            ("M", "jeter un objet", bool(player.inventory.items)),
         ):
             alpha = 255 if available else DIM_ALPHA
             draw_keycap(right - C.UI_KEYCAP_SIZE / 2, row_y, key, alpha=alpha)
@@ -205,7 +207,7 @@ class HUD:
         row_y = C.UI_MARGIN + 52
 
         if target.actionable:
-            draw_keycap(left + C.UI_KEYCAP_SIZE / 2, row_y, "E")
+            draw_keycap(left + C.UI_KEYCAP_SIZE / 2, row_y, "J")
         # Ombre portée, puis le texte : même principe que draw_text_shadowed.
         self._prompt.x = left + keycap_width + 1
         self._prompt.y = row_y - 6

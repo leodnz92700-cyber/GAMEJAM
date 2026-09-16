@@ -11,8 +11,17 @@ conséquences d'une mort.
     Il brille, il a une présence physique, et tout ce que le joueur transportait
     tombe au sol autour de lui, prêt à être ramassé. C'est un investissement pour
     la vie suivante.
-  - Mort par la CRÉATURE : le corps est dévoré. Aucun cadavre, aucun objet
-    récupérable, aucun nouveau repère. La vie est intégralement perdue.
+    En plus de cela, une COPIE de chaque objet transporté réapparaît à son
+    emplacement d'origine dans la carte. Les objets se dupliquent donc à chaque
+    mort qui laisse un cadavre : c'est voulu. Le labyrinthe se remplit d'objets à des endroits
+    de plus en plus variés, mourir devient un vrai gain, et le joueur n'est
+    jamais forcé de retraverser tout l'étage pour récupérer une clé tombée près
+    d'un ancien corps.
+  - Mort par la CRÉATURE : le corps est dévoré. Aucun cadavre, aucune affaire au
+    sol, aucun nouveau repère — la vie est perdue pour rien. Les objets
+    transportés, eux, retournent quand même à leur emplacement d'origine : la
+    créature prive le joueur du repère qu'il aurait laissé, pas de la clé qu'il
+    portait.
 
 Toute la tension du jeu tient dans cet écart : le joueur doit choisir sa mort
 avant que la créature ne la choisisse pour lui.
@@ -44,14 +53,23 @@ class DeathManager:
 
     def kill(self, player, level, cause: str) -> DeathResult:
         """Tue le joueur et applique les conséquences liées à la cause."""
+        # TOUT ce que le joueur portait tombe : plus aucune exception par type
+        # d'objet. Ce qui distingue les morts entre elles, c'est la cause, pas
+        # le contenu du sac.
         carried = player.inventory.clear()
-        # La fiole est unique et ne se transmet jamais à un cadavre : elle
-        # réapparaît à sa place d'origine (`level.restore_unique_items`).
-        carried = [item for item in carried if item.type != C.ITEM_VIAL]
         leaves_corpse = cause in (C.DEATH_VIAL, C.DEATH_TRAP, C.DEATH_ARROW)
 
+        # QUELLE QUE SOIT la cause, ce que le joueur portait retourne a son
+        # emplacement de level design. Ce qui se joue a la mort, ce n'est pas la
+        # destruction des objets — le labyrinthe les remet toujours a leur place
+        # — c'est le CADAVRE et le tas d'affaires posees a l'endroit precis ou
+        # l'on est tombe. La creature prive le joueur de ce repere-la, pas de la
+        # cle qu'il portait.
+        level.respawn_carried_at_origin(carried)
+
         if leaves_corpse:
-            # Le corps reste sur place, et les affaires tombent autour de lui.
+            # Le corps reste sur place, et les affaires tombent autour de lui,
+            # en plus des exemplaires revenus a leur place d'origine.
             level.add_corpse(player.center_x, player.center_y, cause)
             level.drop_items(player.center_x, player.center_y, carried)
             if cause == C.DEATH_VIAL:
@@ -74,10 +92,12 @@ class DeathManager:
                 )
             items_lost = 0
         else:
-            message = "Elle t'a devore. Rien ne reste : ni corps, ni objets."
+            message = (
+                "Elle t'a devore. Pas de corps, pas de repere : "
+                "tes affaires sont retournees la ou tu les avais trouvees."
+            )
             # La creature tue sur-le-champ : ce son-la part bien au bon moment,
             # en meme temps que l'eclair du jumpscare.
-            self.audio.stop_chase()
             self.audio.play("monster_kill")
             items_lost = len(carried)
 

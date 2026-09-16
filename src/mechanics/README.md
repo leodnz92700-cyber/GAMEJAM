@@ -6,8 +6,8 @@ Contient les systèmes et moteurs qui gèrent les règles du jeu.
   connaît un nom de fichier audio : ils demandent un nom LOGIQUE (`door_open`,
   `alert_close`) et ce module sait où le trouver. Le son n'est pas décoratif
   ici : il REMPLACE le compte à rebours, c'est lui qui prévient le joueur de
-  l'approche de la créature (grognements par palier, respiration qui s'affole,
-  musique de poursuite). L'inventaire complet des sons est dans
+  l'approche de la créature : grognements par palier, puis respiration qui
+  s'affole. L'inventaire complet des sons est dans
   `assets/audio/README.md`, leur volume dans `constants.AUDIO_VOLUMES`.
 - **death_manager.py** : gère la mécanique principale du jeu : la mort
   volontaire (le corps reste, les affaires tombent au sol autour de lui) VS la
@@ -30,7 +30,7 @@ Contient les systèmes et moteurs qui gèrent les règles du jeu.
   carte sans toucher au reste du jeu.
 - **monster_manager.py** : gère la menace invisible. Déclenche les signaux
   sonores et visuels (torches qui vacillent, grognement de chaque palier,
-  respiration du héros, musique de poursuite) pour forcer le joueur à choisir
+  respiration du héros) pour forcer le joueur à choisir
   entre continuer ou se sacrifier, puis lâche la créature.
 - **score_manager.py** : enregistre le temps, le nombre de morts et les autres
   statistiques pour l'écran de fin et le tableau des scores local.

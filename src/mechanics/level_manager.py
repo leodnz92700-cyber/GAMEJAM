@@ -101,10 +101,14 @@ class Level:
 
             elif kind in ("key", "vial", "torch", "shield", "potion", "object"):
                 item = make_item_from_map_object(map_object)
+                # Emplacement de level design de CET objet. Il voyage avec lui
+                # dans l'inventaire : quand le joueur meurt en le portant, une
+                # copie revient ici (voir `respawn_carried_at_origin`).
+                item.properties["origin"] = map_object.position
                 self.item_list.append(ItemSprite(item, *map_object.position))
                 if item.type in C.RESPAWNING_ITEM_TYPES:
                     self.unique_item_spawns.append(
-                        (item.type, map_object.position, dict(map_object.properties))
+                        (item.type, map_object.position, dict(item.properties))
                     )
 
             elif kind in ("door_key", "door_plate", "door"):
@@ -307,6 +311,14 @@ class Level:
             return True
         return False
 
+    def _item_lies_at(self, item_type: str, x: float, y: float) -> bool:
+        """Un objet de ce type est-il pose a cet endroit precis du sol ?"""
+        return any(
+            sprite.item.type == item_type
+            and arcade.math.get_distance(x, y, *sprite.position) < C.TILE_SIZE * 0.6
+            for sprite in self.item_list
+        )
+
     def restore_unique_items(self, player=None) -> list[str]:
         """
         Remet en place les objets uniques qui ont disparu du niveau.
@@ -326,22 +338,24 @@ class Level:
         """
         restored: list[str] = []
         for item_type, (x, y), properties in self.unique_item_spawns:
-            if self._unique_item_exists(item_type, properties, player):
+            if item_type == C.ITEM_VIAL:
+                # La FIOLE se juge a son emplacement, pas a l'echelle de
+                # l'etage : depuis que les objets se dupliquent a chaque mort
+                # (`respawn_carried_at_origin`), un exemplaire abandonne a
+                # l'autre bout de la carte suffisait a la faire passer pour
+                # « toujours presente », et le joueur revivait loin de toute
+                # fiole. Or se donner la mort doit rester possible a CHAQUE vie.
+                if self._item_lies_at(item_type, x, y):
+                    continue
+            elif self._unique_item_exists(item_type, properties, player):
                 continue
             self.item_list.append(ItemSprite(Item(item_type, dict(properties)), x, y))
             restored.append(item_type)
-            
-        # Reset satisfied NPCs if their key was devoured
-        for npc in self.npc_list:
-            if not getattr(npc, "wants_item", None) or not npc.satisfied:
-                continue
-            key_id = getattr(npc, "properties", {}).get("key_id")
-            if not self._unique_item_exists(C.ITEM_KEY, {"key_id": key_id}, player):
-                npc.satisfied = False
-                npc.lines = str(getattr(npc, "properties", {}).get("lines", "...")).split("|")
-                npc.line_index = 0
-                restored.append(C.ITEM_KEY)
-        
+
+        # Rien a faire de plus pour les cles donnees par un PNJ : le troc est
+        # rejouable a l'infini (`InteractionManager._talk`), et l'objet qu'il
+        # reclame fait partie des objets uniques remis en place ci-dessus. Une
+        # cle devoree par la creature se re-obtient donc toujours.
         return restored
 
     def add_corpse(self, x: float, y: float, cause: str) -> Corpse:
@@ -368,6 +382,57 @@ class Level:
             self.item_list.append(sprite)
             dropped.append(sprite)
         return dropped
+
+    def place_item_near(self, x: float, y: float, item) -> ItemSprite:
+        """
+        Pose UN objet volontairement lache par le joueur, juste a cote de lui.
+
+        Il n'est PAS marque `dropped` : ce n'est pas un objet retrouve pres d'un
+        cadavre, il ne doit donc ni luire ni compter comme une fouille de corps.
+        On evite la case exacte du joueur pour qu'il puisse le voir tomber.
+        """
+        item.properties.pop("dropped", None)
+        sprite = ItemSprite(item, *self._free_spot_near(x, y, list(self.item_list)))
+        self.item_list.append(sprite)
+        return sprite
+
+    def respawn_carried_at_origin(self, items) -> list[ItemSprite]:
+        """
+        Fait REVENIR a son emplacement de depart une copie de chaque objet
+        transporte au moment d'une mort qui laisse un cadavre.
+
+        C'est volontairement une DUPLICATION : l'exemplaire tombe pres du corps
+        reste ramassable, et un autre attend la ou le joueur l'avait trouve la
+        premiere fois. Mourir enrichit donc reellement le labyrinthe — c'est la
+        traduction mecanique de « mourir pour mieux avancer » — et le joueur
+        n'est jamais oblige de refaire tout le chemin jusqu'a son cadavre pour
+        recuperer une cle.
+
+        Seuls les objets POSES DANS LA CARTE ont un emplacement d'origine
+        (`properties["origin"]`, renseigne au chargement). Un objet donne par un
+        PNJ n'en a pas : il ne tombe que pres du cadavre.
+
+        Rien ne revient quand la creature devore le joueur : `death_manager`
+        n'appelle pas cette methode dans ce cas.
+        """
+        respawned: list[ItemSprite] = []
+        for item in items:
+            origin = item.properties.get("origin")
+            if origin is None:
+                continue
+            x, y = origin
+            # Garde-fou : on n'empile pas dix exemplaires au meme endroit si le
+            # joueur meurt plusieurs fois de suite en portant le meme objet.
+            if self._item_lies_at(item.type, x, y):
+                continue
+            properties = dict(item.properties)
+            # La copie n'est pas « tombee d'un cadavre » : elle est de retour a
+            # sa place de level design, sans la lueur doree des affaires.
+            properties.pop("dropped", None)
+            sprite = ItemSprite(Item(item.type, properties), x, y)
+            self.item_list.append(sprite)
+            respawned.append(sprite)
+        return respawned
 
     def _free_spot_near(self, x: float, y: float, already: list) -> tuple[float, float]:
         """

@@ -390,7 +390,7 @@ GAMEJAM/
     ├── mechanics/
     │   ├── audio_manager.py         # [Léo] NOUVEAU — point d'entrée unique du son, paliers de tension
     │   ├── death_manager.py         # [Inès] Mort choisie (cadavre + objets) vs subie (rien)
-    │   ├── interaction_manager.py   # [Melvin] Touches E/F/R : ramasser, ouvrir, planter, boire
+    │   ├── interaction_manager.py   # [Melvin] Touches J/K/L/M : ramasser, ouvrir, planter, jeter, boire
     │   ├── inventory_system.py      # [Théo] Sac de 2 places
     │   ├── level_manager.py         # [Melvin] Construit le niveau, simule l'environnement, gère les zones
     │   ├── lighting_engine.py       # [Léo] Shader d'obscurité + passe de lueur additive
@@ -442,10 +442,11 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
 | Touche | Action |
 |--------|--------|
 | `Z` `Q` `S` `D` ou les flèches | se déplacer |
-| `E` | interagir : ramasser un objet, ouvrir une porte, parler — l'invite n'apparaît que si quelque chose est à portée |
-| `F` | planter une torche (éclaire la zone définitivement) |
-| `R` | boire la fiole : mort volontaire |
-| `M` | couper / rétablir le son (utile pour montrer le jeu dans une salle bruyante) |
+| `J` | interagir : ramasser un objet, ouvrir une porte, parler — l'invite n'apparaît que si quelque chose est à portée |
+| `L` | planter une torche (éclaire la zone définitivement) |
+| `M` | jeter le premier objet du sac aux pieds du joueur (il reste ramassable) |
+| `K` | boire la fiole : mort volontaire |
+| `N` | couper / rétablir le son (utile pour montrer le jeu dans une salle bruyante) |
 | `Échap` | retour au menu |
 
 ## Ce qui fonctionne déjà
@@ -468,9 +469,20 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
 - **Les affaires tombent au sol autour du corps** : il n'y a rien à fouiller, on
   les ramasse comme n'importe quel objet. Elles n'émettent aucune lumière — ce
   sont la lueur du cadavre et les torches plantées qui les rendent visibles.
-- **Une seule fiole**, posée à quelques pas du départ. Elle réapparaît
-  toujours au même endroit après chaque mort, quelle qu'en soit la cause : on ne
-  peut donc jamais en stocker, mais on n'est jamais bloqué non plus.
+- **... et une copie de chacune retourne à sa place d'origine.** Une mort qui
+  laisse un cadavre **duplique** donc tout ce que le joueur portait : un
+  exemplaire près du corps, un autre là où le level design l'avait posé. C'est
+  assumé — mourir enrichit réellement le labyrinthe, les objets se retrouvent à
+  des endroits de plus en plus variés, et on n'est jamais obligé de retraverser
+  tout l'étage pour récupérer une clé tombée près d'un ancien corps. Le retour à
+  la place d'origine a lieu **quelle que soit la cause de la mort**, créature
+  comprise : seul un objet donné par un PNJ, qui n'a pas d'emplacement dans la
+  carte, peut être définitivement perdu.
+- **Une fiole toujours au même endroit, à quelques pas du départ.** Elle y
+  revient après chaque mort, quelle qu'en soit la cause : se donner la mort doit
+  rester possible à chaque vie. Comme tout se duplique, on peut désormais en
+  croiser d'autres exemplaires ailleurs dans l'étage ; c'est la place près du
+  départ, et elle seule, qui est garantie pleine.
 - **Beaucoup de torches** semées le long du chemin principal, assez pour
   l'éclairer entièrement. Une torche plantée ne se ramasse plus. Une torche
   encore dans le sac au moment d'une mort volontaire se retrouve sur le cadavre
@@ -488,21 +500,21 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
   dans le noir — la première traversée se paie d'une mort, et c'est voulu.
   **Il ne s'arrête jamais de tirer, même une fois le joueur tué** : c'est le
   corps laissé en travers de la trajectoire qui arrête les flèches, et qui ouvre
-  le passage pour les vies suivantes. Les flèches ont une portée d'environ
-  9 tuiles, pour que le danger reste dans la salle de l'archer et qu'on ne
-  meure jamais d'un tir venu d'un endroit qu'on n'a pas vu.
+  le passage pour les vies suivantes. Une flèche n'a **pas de portée
+  maximale** : elle vole jusqu'à rencontrer un obstacle — un mur, un cadavre ou
+  le joueur.
 - **Mort par la créature** : sa gueule remplit l'écran (jumpscare) avant la vie
-  suivante. Aucun cadavre, tous les objets perdus. Les objets
-  UNIQUES (la fiole, les clés) reviennent cependant là où le level design les
-  avait posés : sans cela, se faire dévorer en portant la clé détruirait le seul
-  exemplaire et rendrait l'étage définitivement infinissable. La punition reste
-  entière — il faut refaire tout le trajet pour aller la rechercher.
+  suivante. **Aucun cadavre et rien au sol** : la vie entière est perdue pour
+  rien, et c'est là toute la punition. Les objets qu'on portait retournent, eux,
+  là où le level design les avait posés — il faut refaire tout le trajet pour
+  aller les rechercher, mais se faire dévorer en portant la clé ne rend jamais
+  l'étage infinissable.
 - **Physique des cadavres** : ils maintiennent une plaque de pression enfoncée
   (donc une porte ouverte) et bloquent les flèches, mais on marche dessus :
   un cadavre ne condamne jamais un couloir.
 - **Créature** : lâchée après un délai fixe, jamais affiché. Elle s'annonce par
-  des sons (un grognement different par palier, sa propre respiration qui
-  s'affole, la musique de poursuite quand la bete approche) et par le
+  des sons (un grognement different par palier, puis sa propre respiration qui
+  s'affole) et par le
   vacillement des torches, puis traque le joueur par le plus court chemin. Elle
   n'est visible qu'à très courte distance.
 - **Objets** : clés, fioles, torches. Inventaire limité à 3 emplacements.
@@ -586,7 +598,12 @@ changement de sprite, relancez `python tools/walk_test.py`.
 
 ## Pas encore fait
 
-- Les PNJ existent en tant que classe mais aucun n'est posé dans les cartes.
+- **Le PNJ troque un bouclier contre une clé, autant de fois qu'on veut** :
+  tant qu'on n'a pas de bouclier il en réclame un, dès qu'on en a un il le prend
+  et rend une clé en disant d'aller s'en servir. Rien n'est mémorisé : revenir
+  avec un second bouclier redonne une seconde clé. Les clés se stockent donc,
+  au prix d'un aller-retour — et une clé dévorée par la créature est toujours
+  récupérable.
 - La créature ne dévore pas les cadavres (le pitch l'évoque) : à ajouter dans
   `monster_manager` si vous voulez punir l'accumulation de dépouilles.
 - Pas de mémoire des zones explorées (la carte ne reste pas partiellement

@@ -3,15 +3,18 @@ Fichier : npc.py
 Auteur : [À COMPLÉTER — module laissé volontairement minimal]
 
 Description :
-Les PNJ du labyrinthe. Pour l'instant : un sprite qui affiche une réplique
-quand le joueur interagit avec lui. Aucun PNJ n'est posé dans les cartes
-placeholder ; ajoutez des objets de classe "npc" dans le calque "NPCs" sous
-Tiled pour en faire apparaître.
+Les PNJ du labyrinthe : un sprite avec lequel on dialogue, et qui peut réclamer
+un objet (propriété Tiled `wants_item`).
 
-Piste d'évolution (le pitch mentionne des PNJ qui demandent des objets) :
-ajoutez une propriété Tiled `wants_item` et faites que `interaction_manager`
-consomme l'objet correspondant avant de déclencher un effet (ouvrir une porte,
-donner une clé, révéler un passage).
+Le troc est SANS ÉTAT et se rejoue autant de fois qu'on veut : à chaque fois que
+le joueur se présente avec l'objet demandé, le PNJ le prend et rend une clé.
+C'est voulu — les clés se dupliquent comme le reste, le PNJ est une source, pas
+une étape franchie une fois pour toutes. Il n'y a donc aucun drapeau « déjà
+servi » ici : ce que dit le PNJ ne dépend que de ce que le joueur porte AU
+MOMENT où il lui parle.
+
+C'est `interaction_manager._talk` qui exécute l'échange ; ici on ne garde que les
+répliques.
 """
 from __future__ import annotations
 
@@ -40,7 +43,6 @@ class NPC(arcade.Sprite):
         )
         self.lines = lines or ["..."]
         self.wants_item = wants_item
-        self.satisfied = False
         self._line_index = 0
 
     def next_line(self) -> str:

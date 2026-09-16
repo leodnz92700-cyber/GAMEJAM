@@ -40,9 +40,8 @@ Une partie doit tenir en **moins de 5 minutes**.
 ### Les trois règles de game design à ne jamais casser
 
 1. **Aucun compte à rebours affiché** pour la créature. Le joueur ne dispose que
-   du son (un grognement différent à chacun des quatre paliers, sa propre
-   respiration qui s'affole, puis la musique de poursuite) et du **vacillement
-   des torches**. Le seul chronomètre autorisé à
+   du son (un grognement différent à chacun des quatre paliers, puis sa propre
+   respiration qui s'affole) et du **vacillement des torches**. Le seul chronomètre autorisé à
    l'écran est celui du mode « Contre-la-montre », qui est une règle de mode et
    non la créature.
 2. **Mourir doit toujours rester possible.** La fiole est unique mais réapparaît
@@ -139,7 +138,7 @@ jour quand vous ajoutez un fichier.
   **saute** à la zone voisine (petit fondu), elle ne suit jamais le joueur.
   Le niveau = 4 zones (2x2), soit une carte de 80 x 44 tuiles.
 - **Obscurité par shader** : voile noir percé + passe de lueur additive.
-- Mort volontaire (fiole `R`) avec animation d'effondrement, mort par piège,
+- Mort volontaire (fiole `K`) avec animation d'effondrement, mort par piège,
   mort par la créature avec jumpscare.
 - Cadavres persistants (lueur, plaques, blocage des flèches, franchissables).
 - Objets tombés au sol autour du corps, aucune interaction avec le cadavre.
@@ -151,13 +150,13 @@ jour quand vous ajoutez un fichier.
 - Écrans d'accueil, de victoire et de défaite, classement local, 3 modes de
   jeu (Exploration / Sursis 8 morts / Contre-la-montre 5 min).
 - **Son complet** : pas, respiration, cri de douleur, objets, portes, plaques,
-  pièges, tir de l'archer, 4 alertes de la créature, musique de poursuite,
-  jumpscare, menu et écrans de fin (voir §8).
+  pièges, tir de l'archer, 4 alertes de la créature, jumpscare, menu et
+  écrans de fin (voir §8).
 - ATH entièrement transparent (voir §6).
 
 ### Pas encore fait (pistes pour un coéquipier)
 
-- Les PNJ existent en tant que classe, **aucun n'est posé dans les cartes**.
+- Un seul PNJ est posé dans la carte (celui du bouclier).
 - La créature ne dévore pas les cadavres (le pitch l'évoque) → `monster_manager`.
 - Pas de mémoire des zones explorées → `lighting_engine`.
 - Trois sons sur trente sont encore des placeholders de synthèse :
@@ -260,14 +259,16 @@ c'est lui qui détecte qu'un héros est devenu trop large pour un couloir.
   `RESPAWNING_ITEM_TYPES` et `Level.restore_unique_items()` : les objets uniques
   reviennent à leur emplacement d'origine **seulement s'ils ont disparu du
   monde**. Une clé posée près d'un cadavre est toujours dans le niveau : elle
-  n'est pas remise en place, et le joueur doit aller la rechercher. Tout nouvel
+  n'est pas remise en place, et le joueur doit aller la rechercher. La FIOLE,
+  elle, fait exception depuis la duplication des objets à la mort : elle se juge
+  à son emplacement d'origine, pas à l'échelle de l'étage. Tout nouvel
   objet de quête unique doit être ajouté à cette liste.
 - Tous les pièges pulsent **en phase**, pilotés par `Level.clock` : sinon le
   joueur ne peut pas apprendre le rythme.
-- **Flèche sans portée** = mort incompréhensible. Un tir qui sort de la salle
-  par une ouverture traversait tout l'étage et tuait le joueur trois salles plus
-  loin, sans qu'il ait jamais vu l'archer. D'où `ARROW_RANGE` (9 tuiles) : le
-  danger reste dans la pièce du tireur.
+- **Les flèches n'ont plus de portée maximale** (`ARROW_RANGE` supprimé, demande
+  explicite du joueur) : une flèche ne s'arrête que sur un **obstacle** — mur,
+  cadavre, joueur. `ARROW_LIFETIME` n'est qu'un garde-fou technique, pour qu'une
+  flèche partie hors de la carte finisse par être retirée de la liste.
 
 ---
 
@@ -290,7 +291,7 @@ Disposition (`src/ui/hud.py`) :
 | haut gauche | étage et zone |
 | haut droite | temps de la partie et nombre de morts |
 | haut centre | murmures : ce que le personnage entend de la créature |
-| bas droite | inventaire (titre « INVENTAIRE » **au-dessus** des cases), surmonté des rappels `F` / `R` |
+| bas droite | inventaire (titre « INVENTAIRE » **au-dessus** des cases), surmonté des rappels `L` / `K` / `M`, empilés de bas en haut |
 | bas centre | invite d'interaction et messages temporaires |
 
 - Les touches sont **dessinées à la main** (`src/ui/key_icons.py`) : rectangle +
@@ -393,8 +394,14 @@ ad hoc dans `game_view` — sinon l'invite et le comportement divergeront.
 Ordre de priorité, important pour la lisibilité dans le noir :
 objet au sol → porte fermée → PNJ.
 
-Commandes : `ZQSD`/flèches déplacer · `E` interagir · `F` planter une torche ·
-`R` boire la fiole · `M` couper le son · `Échap` menu.
+Commandes : `ZQSD`/flèches déplacer · `J` interagir · `K` boire la fiole ·
+`L` planter une torche · `M` jeter le premier objet du sac · `N` couper le son ·
+`Échap` menu.
+
+Les quatre actions de jeu sont groupees sur `J K L M`, cote a cote sous la main
+droite, a la demande de l'equipe : elles etaient auparavant sur `E F R J`,
+eparpillees autour de ZQSD. Le coupe-son a donc migre de `M` vers `N`, dans le
+jeu ET dans le menu.
 
 ---
 
@@ -415,12 +422,38 @@ que le joueur le demande.**
 - **Aucune interaction avec le cadavre.** Les affaires tombent au sol **autour**
   du corps et se ramassent comme n'importe quel objet. Elles ne sont jamais
   posées pile sur le corps, où elles seraient cachées par le sprite.
-- **Une seule fiole par étage**, près du départ, qui réapparaît après **chaque**
-  mort — volontaire, par piège ou par la créature.
+- **Tout objet porté à la mort retourne à son emplacement de level design**
+  (`Level.respawn_carried_at_origin`, appelé par `death_manager` pour TOUTES les
+  causes de mort, créature comprise). Un objet donné par un PNJ n'a pas d'origine
+  dans la carte et fait donc exception : lui seul peut être perdu.
+- **Une mort qui laisse un cadavre DUPLIQUE en plus les objets portés** : chacun
+  tombe aussi autour du corps. La duplication est le but, pas un effet de bord :
+  elle répartit les objets dans des endroits de plus en plus variés au fil des
+  morts et évite d'avoir à retraverser tout l'étage pour une clé laissée près
+  d'un vieux corps. Il n'y a plus aucune exception par type d'objet — la fiole
+  tombe comme le reste. **Dévoré par la créature, il n'y a ni cadavre ni
+  affaires au sol** : ce que la créature vole, c'est le REPÈRE qu'on aurait
+  laissé là où l'on est tombé, pas la clé qu'on portait. C'est cet écart-là, et
+  non la destruction des objets, qui sépare la mort choisie de la mort subie.
+- **Une seule fiole d'origine par étage**, près du départ, qui réapparaît après
+  **chaque** mort — volontaire, par piège ou par la créature. Depuis la
+  duplication, sa présence se juge **à son emplacement** et non à l'échelle de
+  l'étage (`Level._item_lies_at`) : un exemplaire abandonné à l'autre bout de la
+  carte ne doit pas faire croire que la fiole est « toujours là » alors que la
+  place près du départ est vide.
+- **Le troc du PNJ est SANS ÉTAT et rejouable à l'infini**
+  (`InteractionManager._talk`) : sans l'objet réclamé il le RÉCLAME, avec l'objet
+  il le prend et rend une **clé** en disant d'aller s'en servir — et cela autant
+  de fois que le joueur revient avec un bouclier. Il n'y a **aucun drapeau
+  « déjà servi »** (`NPC.satisfied` a été supprimé, ne le réintroduisez pas) :
+  ce que dit le PNJ ne dépend que de ce que le joueur porte à cet instant. Les
+  clés se dupliquent donc comme le reste des objets, et c'est ce qui rend une clé
+  dévorée par la créature toujours récupérable, sans aucun code de rattrapage
+  dans `restore_unique_items`.
 - **Beaucoup de torches** (une vingtaine) le long du chemin principal, assez pour
   l'éclairer entièrement. Une torche plantée **ne se ramasse plus**. Une torche
-  en poche lors d'une mort choisie se retrouve près du cadavre ; dévoré par la
-  créature, on la perd.
+  en poche lors d'une mort choisie se retrouve près du cadavre ET à sa place
+  d'origine ; dévoré par la créature, il ne reste que celle revenue à sa place.
 - **Couloirs de 1 ou 2 tuiles**, quelques salles plus larges pour y poser des
   objets. Aux frontières de zone, **un mur partout où l'on ne peut pas passer** :
   le joueur ne doit jamais avancer vers un bord en espérant qu'il s'ouvre.
@@ -469,11 +502,17 @@ même nom ; l'inventaire complet, avec le moment exact où chacun joue, est dans
   **silence**, troué de loin en loin par une goutte d'eau ou un grincement. Une
   nappe continue noyait les signaux qui remplacent le compte à rebours. Ne la
   réintroduisez pas.
-- **Trois signaux, et eux seuls, disent au joueur combien de temps il lui
+- **Deux signaux, et eux seuls, disent au joueur combien de temps il lui
   reste** : un grognement différent par palier (`TENSION_CUES`, exactement les
-  quatre murmures rouges de l'ATH), sa respiration (souffle occasionnel au
-  calme, halètement **en boucle** à partir du palier `close`), et la musique de
-  poursuite. Baisser leur volume revient à retirer au joueur sa seule horloge.
+  quatre murmures rouges de l'ATH) et sa respiration (souffle occasionnel au
+  calme, halètement **en boucle** à partir du palier `close`). Baisser leur
+  volume revient à retirer au joueur sa seule horloge.
+- **La musique de poursuite a été RETIRÉE**, après écoute. Elle se déclenchait à
+  l'approche de la créature, mais dans le noir, sous le halètement et les
+  grognements, on ne l'entendait pratiquement pas : elle ajoutait de la matière
+  sonore sans ajouter d'information. Le fichier `monster/monster_chase.wav` est
+  toujours dans le dépôt, il n'est plus chargé. Ne la remettez pas sans qu'on le
+  demande.
 - **La respiration est le son le plus facile à rater.** C'est un fond permanent :
   trop forte ou trop fréquente, elle cesse d'être « le personnage a peur » pour
   devenir « quelqu'un souffle dans le micro ». Elle a son propre niveau de
@@ -485,14 +524,9 @@ même nom ; l'inventaire complet, avec le moment exact où chacun joue, est dans
 - **La goutte d'eau est tirée 4 fois plus souvent que le grincement**
   (`AUDIO_AMBIENCE_WEIGHTS`) : elle est courte et discrète, alors que le
   grincement dure dix secondes et envahit tout à fréquence égale.
-- **La musique de poursuite se déclenche plus LOIN que la créature n'est
-  visible** (`AUDIO_CHASE_RADIUS` = 340 px contre `MONSTER_VISIBLE_RADIUS` =
-  160) : il doit l'entendre arriver avant de la voir. Elle continue
-  `AUDIO_CHASE_RELEASE_DELAY` secondes après qu'elle s'éloigne, sinon elle
-  clignote quand la bête tourne autour de lui.
 - **Les bruits de décor sont atténués avec la DISTANCE au joueur**
   (`Level._audible_volume`) : volume plein sur place, plus rien au-delà de
-  `AUDIO_NEAR_RANGE` (8 tuiles, soit à peu près la portée d'une flèche). Tous
+  `AUDIO_NEAR_RANGE` (8 tuiles). Tous
   les pièges de l'étage battent en phase et les archers tirent trois fois par
   seconde sans jamais s'arrêter : entendus au même volume de partout, ils
   formaient un vacarme où plus rien n'était lisible ; atténués, ils redeviennent
@@ -531,6 +565,12 @@ même nom ; l'inventaire complet, avec le moment exact où chacun joue, est dans
   durait 22,9 s pour 6,3 Mo (quatre prises à la suite avec leur réverbération) :
   monter sur une plaque déclenchait un son de 23 s. Il a été recoupé à 0,9 s.
   Un bruitage d'interaction tient en moins d'une seconde.
+- **Un son de jeu ne doit pas commencer par du silence.** `final_timer.wav`,
+  le cri du jumpscare, commençait par **1,04 s de blanc** : le cri arrivait
+  alors que l'éclair et la gueule étaient déjà passés, puisque toute la mise en
+  scène ne dure que 1,4 s. Il a fallu rogner le fichier. Le symptôme est
+  trompeur — on croit à un problème de déclenchement dans le code alors que
+  l'appel part bien au bon moment.
 - Un son **introuvable ou illisible** est retenu dans `_unavailable` : sans ce
   cache, une boucle qui n'a pas pu démarrer était retentée soixante fois par
   seconde.

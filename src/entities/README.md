@@ -12,8 +12,9 @@ Contient les acteurs dynamiques du jeu.
   clés, torches).
 - **monster.py** : La créature qui traque le joueur, un fantôme invisible tant
   qu'il n'est pas à quelques pas.
-- **npc.py** : Les personnages non-joueurs mentionnés dans le pitch. Squelette
-  prêt à l'emploi, aucun PNJ n'est encore posé dans les cartes.
+- **npc.py** : Les personnages non-joueurs. Ils portent leurs répliques et, via
+  la propriété Tiled `wants_item`, réclament un objet contre une clé ;
+  l'échange lui-même est exécuté par `interaction_manager._talk`.
 - **player.py** : Le joueur, son animation dans quatre directions, son
   inventaire limité et ses actions.
 - **textures.py** : Découpage des bandes d'animation du pack graphique et

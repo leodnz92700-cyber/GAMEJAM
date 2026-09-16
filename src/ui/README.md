@@ -8,7 +8,7 @@ dialogue) qui seront affichés par les vues (`src/views/`).
   il n'y a aucun bandeau. Zone courante en haut à gauche, temps et morts en haut
   à droite, inventaire et rappels de touches en bas à droite, invite
   d'interaction en bas au centre. Deux règles à respecter : l'ATH n'affiche
-  JAMAIS le temps restant avant l'arrivée de la créature, et l'invite « E » ne
+  JAMAIS le temps restant avant l'arrivée de la créature, et l'invite « J » ne
   s'affiche que lorsqu'une interaction est réellement à portée.
 - **fonts.py** : charge la police pixel du jeu (*Pixelify Sans*, `assets/fonts/`).
   Choisie parce qu'elle a de vraies bas-de-casse ET un vrai gras, ce que la

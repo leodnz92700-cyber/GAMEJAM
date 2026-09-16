@@ -180,7 +180,7 @@ class MainMenuView(arcade.View):
         elif key in (arcade.key.RIGHT, arcade.key.D) and self.buttons.selected == 0:
             self._cycle_mode(1)
             self.audio.play("ui_hover")
-        elif key == arcade.key.M:
+        elif key == arcade.key.N:
             self._toggle_mute()
         elif key in (arcade.key.ENTER, arcade.key.NUM_ENTER, arcade.key.SPACE):
             self._activate(self.buttons.selected)
@@ -218,7 +218,7 @@ class MainMenuView(arcade.View):
         self._refresh_labels()
 
     def _toggle_mute(self) -> None:
-        """Coupe-son (touche M), le meme que dans le jeu."""
+        """Coupe-son (touche N), le meme que dans le jeu."""
         if not self.audio.toggle_mute():
             self.audio.start_menu_music()
 

@@ -174,7 +174,8 @@ ARCHER_DEFAULT_SPEED = 330.0          # pixels par seconde (le joueur en fait 18
 ARCHER_SHOOT_ANIMATION = 0.26         # geste de tir, plus court que la cadence
 ARCHER_RELEASE_FRAME = 5              # image où l'arc se détend (bande de tir : 6 images)
 ARCHER_FRAME_SIZE = (32, 48)        # bandes du pack : 4 images au repos, 6 au tir
-ARROW_RANGE = 9 * TILE_SIZE           # la flèche finit sa course : le danger reste dans la salle
+# Pas de portée maximale : une flèche ne s'arrête que sur un obstacle (mur,
+# cadavre, joueur). ARROW_LIFETIME n'est qu'un garde-fou technique.
 ARROW_LIFETIME = 6.0                  # sécurité : une flèche perdue finit par disparaître
 ARROW_HIT_BOX = (12, 6)               # petite boîte : c'est la pointe qui tue
 
@@ -255,6 +256,9 @@ COLOR_DANGER = (203, 66, 54)           # le rouge du logo, remonte pour etre lis
 # deux lueurs dorees seraient impossibles a distinguer.
 COLOR_CORPSE_GLOW = (120, 200, 220)
 COLOR_TORCH_GLOW = (255, 176, 88)
+# Vert franc : la sortie ne doit se confondre ni avec le cyan du cadavre
+# ni avec l'orange des torches. C'est la seule lueur verte du jeu.
+COLOR_EXIT_GLOW = (70, 255, 120)
 
 # --------------------------------------------------------------------------- #
 # Interface (tout est dessiné en transparence, sans aucun bandeau)
@@ -312,8 +316,8 @@ DEATH_DEVOURED = "devoured"  # mort par la creature : aucun cadavre, tout est pe
 #
 # Regle de game design qui commande tout ce bloc : il n'y a AUCUN compte a
 # rebours affiche. Le son est la seule horloge du joueur — les quatre alertes du
-# monstre, la respiration qui s'affole, la musique de poursuite. Baisser ces
-# volumes, c'est retirer au joueur sa seule information.
+# monstre et la respiration qui s'affole. Baisser ces volumes, c'est retirer au
+# joueur sa seule information.
 AUDIO_MASTER_VOLUME = 0.8             # volume general, applique a tout le reste
 
 # Volume de chaque son, par nom logique (voir SOUND_FILES dans audio_manager).
@@ -361,7 +365,7 @@ AUDIO_VOLUMES = {
     "arrow_shot": 0.09,        # repetitif — une toutes les 0,3 s, le moindre exces sature
     # --- Ambiance ---------------------------------------------------------- #
     "water_drop": 0.24,        # discret
-    "squeak": 0.30,            # discret
+    "squeak": 0.17,            # discret
     "menu_music": 0.45,        # boucle — MP3, seul reglage encore fait a l'oreille
     # --- Interface --------------------------------------------------------- #
     "ui_hover": 0.81,          # repetitif — fichier tres faible (-30 dBFS)
@@ -372,7 +376,6 @@ AUDIO_VOLUMES = {
     "alert_close": 0.81,       # marquant — fichier faible (-20 dBFS)
     "alert_released": 0.37,    # marquant
     "monster_released": 0.64,  # marquant — se superpose a l'alerte du lacher
-    "monster_chase": 0.31,     # boucle
     "monster_kill": 0.80,      # marquant — fichier faible (-20 dBFS)
     # --- Fin de partie ----------------------------------------------------- #
     "victory": 0.23,           # marquant
@@ -431,10 +434,3 @@ AUDIO_NEAR_RANGE = 8 * TILE_SIZE      # au-dela de 8 tuiles, silence complet
 AUDIO_NEAR_MIN_VOLUME = 0.12          # volume percu pile a la limite de portee
 AUDIO_NEAR_CURVE = 2.0                # 1 = lineaire, 2 = discret de loin, franc de pres
 
-# --- Musique de poursuite --------------------------------------------------- #
-# La creature n'est DESSINEE qu'a tres courte distance (MONSTER_VISIBLE_RADIUS).
-# La musique, elle, se declenche plus tot : le joueur doit l'entendre arriver
-# avant de la voir, sinon il meurt avant d'avoir compris. Le delai d'arret evite
-# que la musique clignote quand elle tourne autour de lui.
-AUDIO_CHASE_RADIUS = 340.0            # distance a laquelle la poursuite se declenche
-AUDIO_CHASE_RELEASE_DELAY = 3.0       # secondes de musique apres qu'elle s'est eloignee

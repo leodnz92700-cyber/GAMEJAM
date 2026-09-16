@@ -85,7 +85,6 @@ ROLES = {
     "victory": "marquant",
     "game_over": "marquant",
     "breathing": "souffle",
-    "monster_chase": "boucle",
     "menu_music": "boucle",   # MP3 : non mesurable ici, se regle a l'oreille
 }
 

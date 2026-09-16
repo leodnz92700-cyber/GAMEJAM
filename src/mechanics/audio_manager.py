@@ -14,9 +14,13 @@ sera lâchée, il n'a que ce que son personnage entend :
 
   1. quatre grognements d'alerte, un par palier d'approche (`play_tension_cue`) ;
   2. sa propre respiration, qui passe du souffle occasionnel au halètement
-     continu dès que la bête se rapproche (`update_breathing`) ;
-  3. la musique de poursuite, qui démarre quand la créature est proche — donc
-     AVANT qu'elle ne soit visible (`update_chase`).
+     continu dès que la bête se rapproche (`update_breathing`).
+
+Il y a eu une troisième piste, une musique de poursuite déclenchée à l'approche
+de la créature : elle a été RETIRÉE à l'écoute. Dans le noir, sous le halètement
+et les grognements, on ne l'entendait pratiquement pas — elle ajoutait de la
+matière sonore sans ajouter d'information. Ne la remettez pas sans qu'on le
+demande.
 
 Il n'y a **pas de nappe de fond** : le fond sonore du jeu est le silence, troué
 au hasard par une goutte d'eau ou un grincement (`update_ambience`). C'est ce
@@ -74,7 +78,6 @@ SOUND_FILES = {
     # Les deux sons ont ete echanges a la demande de l'equipe : `kill_sound`
     # annonce desormais le lacher, et `final_timer` accompagne le jumpscare.
     "monster_released": "monster/kill_sound.wav",
-    "monster_chase": "monster/monster_chase.wav",
     "monster_kill": "monster/final_timer.wav",
     # --- Fin de partie -------------------------------------------------------- #
     "victory": "misc/victory.wav",                     # placeholder de synthèse
@@ -119,8 +122,8 @@ class AudioManager:
         # seconde pour un fichier qui n'existe pas.
         self._unavailable: set[str] = set()
         # Sons continus en cours, par CANAL : un canal ne porte qu'un son à la
-        # fois ("music", "chase", "breathing"), ce qui évite d'empiler deux
-        # boucles l'une sur l'autre après un changement d'écran.
+        # fois ("music", "breathing"), ce qui évite d'empiler deux boucles l'une
+        # sur l'autre après un changement d'écran.
         self._loops: dict[str, object] = {}
         self._rng = random.Random()
 
@@ -133,8 +136,6 @@ class AudioManager:
         self._breath_timer = self._rng.uniform(
             C.AUDIO_BREATH_RANDOM_MIN, C.AUDIO_BREATH_RANDOM_MAX
         )
-        # Poursuite : la musique continue un moment après que la bête s'éloigne.
-        self._chase_timer = 0.0
 
     # ------------------------------------------------------------------ #
     # Sons ponctuels
@@ -182,7 +183,7 @@ class AudioManager:
         self.play(ITEM_PICKUP_SOUNDS.get(item_type, "pickup"))
 
     # ------------------------------------------------------------------ #
-    # Sons continus (musique, poursuite, respiration)
+    # Sons continus (musique du menu, respiration)
     # ------------------------------------------------------------------ #
     def start_loop(self, channel: str, name: str, volume: float = 1.0) -> None:
         """Démarre un son en boucle sur un canal. Sans effet s'il tourne déjà."""
@@ -217,7 +218,6 @@ class AudioManager:
         """Coupe tous les sons continus : à appeler en quittant une vue."""
         for channel in list(self._loops):
             self.stop_loop(channel)
-        self._chase_timer = 0.0
 
     def toggle_mute(self) -> bool:
         """
@@ -319,27 +319,3 @@ class AudioManager:
             # labyrinthe. C'est le seul moment du jeu où deux sons se cumulent
             # volontairement.
             self.play("monster_released")
-
-    def update_chase(self, delta_time: float, near: bool) -> None:
-        """
-        Musique de poursuite : elle tourne tant que la créature est proche.
-
-        `near` est vrai quand elle est dans `C.AUDIO_CHASE_RADIUS`, un rayon plus
-        large que celui où elle devient visible : le joueur l'entend arriver
-        avant de la voir. Le délai d'arrêt évite que la musique clignote quand
-        elle tourne autour de lui.
-        """
-        if near:
-            self._chase_timer = C.AUDIO_CHASE_RELEASE_DELAY
-            self.start_loop("chase", "monster_chase")
-            return
-        if self._chase_timer <= 0:
-            return
-        self._chase_timer -= delta_time
-        if self._chase_timer <= 0:
-            self.stop_loop("chase")
-
-    def stop_chase(self) -> None:
-        """Coupe net la poursuite : mort du joueur, ou nouvelle vie."""
-        self._chase_timer = 0.0
-        self.stop_loop("chase")

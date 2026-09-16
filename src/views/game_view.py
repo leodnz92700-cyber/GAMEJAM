@@ -90,7 +90,7 @@ class GameView(arcade.View):
         # de l'animation.
         self.dying_cause: str | None = None
         # Recalculée à chaque frame : ce que le joueur peut faire là où il est.
-        # L'ATH s'en sert pour n'afficher l'invite « E » qu'à bon escient.
+        # L'ATH s'en sert pour n'afficher l'invite « J » qu'à bon escient.
         self.interaction_target = None
         self.death_timer = 0.0
         self.zone_fade = 0.0
@@ -113,7 +113,7 @@ class GameView(arcade.View):
 
         self.audio.start_ambience()
         # Les touches ne sont plus rappelées ici : l'ATH les affiche en
-        # permanence en bas à droite, et l'invite « E » apparaît toute seule
+        # permanence en bas à droite, et l'invite « J » apparaît toute seule
         # quand il y a quelque chose à faire.
         self.dialog.show(
             "Tu te reveilles dans le noir. Quelque part, il y a une sortie.",
@@ -332,7 +332,7 @@ class GameView(arcade.View):
         if key == arcade.key.ESCAPE:
             self._back_to_menu()
             return
-        if key == arcade.key.M:
+        if key == arcade.key.N:
             # Coupe-son : indispensable pour montrer le jeu dans une salle
             # bruyante ou le laisser tourner sur un stand.
             muted = self.audio.toggle_mute()
@@ -346,11 +346,13 @@ class GameView(arcade.View):
         ):
             return
 
-        if key == arcade.key.E:
+        if key == arcade.key.J:
             self.hud.show_message(self.interaction.interact(self.player, self.level))
-        elif key == arcade.key.F:
+        elif key == arcade.key.L:
             self.hud.show_message(self.interaction.plant_torch(self.player, self.level))
-        elif key == arcade.key.R:
+        elif key == arcade.key.M:
+            self.hud.show_message(self.interaction.drop_item(self.player, self.level))
+        elif key == arcade.key.K:
             if self.interaction.consume_vial(self.player):
                 self._die(C.DEATH_VIAL)
             else:
@@ -478,7 +480,7 @@ class GameView(arcade.View):
                 exit_sprite.center_x, exit_sprite.center_y
             )
             self.lighting.add_light(
-                screen_x, screen_y, C.EXIT_LIGHT_RADIUS, (150, 255, 200), glow=0.20
+                screen_x, screen_y, C.EXIT_LIGHT_RADIUS, C.COLOR_EXIT_GLOW, glow=0.55
             )
 
     def _draw_fades(self) -> None:

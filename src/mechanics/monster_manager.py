@@ -16,9 +16,7 @@ Déroulé d'une vie :
 
 Chaque palier a SON grognement (`audio_manager.TENSION_CUES`), et le meme texte
 s'affiche en rouge en haut de l'ecran : le joueur lit et entend la meme chose au
-meme instant. A partir du palier `close`, sa respiration s'affole en continu, et
-la musique de poursuite demarre des que la creature s'approche — avant qu'elle
-ne soit visible.
+meme instant. A partir du palier `close`, sa respiration s'affole en continu.
 
 La créature apparaît loin du joueur puis le rejoint par le plus court chemin.
 Elle n'est dessinée qu'à très courte distance : le reste du temps, elle est là
@@ -111,9 +109,6 @@ class MonsterManager:
         self.whisper = ""
         self.whisper_timer = 0.0
         self._repath_timer = 0.0
-        # La bete n'est plus la : la musique de poursuite doit s'arreter net,
-        # sans attendre le delai de deconnexion.
-        self.audio.stop_chase()
 
     @property
     def tension(self) -> float:
@@ -146,7 +141,6 @@ class MonsterManager:
         level.set_torch_panic(max(0.0, (self.tension - 0.5) * 2.0))
 
         if self.monster is None:
-            self.audio.update_chase(delta_time, near=False)
             return False
 
         self._chase(delta_time, player, level)
@@ -154,10 +148,6 @@ class MonsterManager:
         distance = arcade.math.get_distance(
             self.monster.center_x, self.monster.center_y, player.center_x, player.center_y
         )
-        # La musique de poursuite se declenche plus LOIN que le rayon ou la
-        # creature devient visible : le joueur doit l'entendre arriver avant de
-        # la voir, sinon il meurt sans avoir eu le temps de fuir.
-        self.audio.update_chase(delta_time, near=distance <= C.AUDIO_CHASE_RADIUS)
         return distance <= C.MONSTER_KILL_RADIUS
 
     def _update_stage(self, level) -> None:
