@@ -67,7 +67,7 @@ LORE = (
 # Ordre d'affichage des modes dans le menu.
 MODE_ORDER = [C.MODE_FREE, C.MODE_LIMITED_DEATHS, C.MODE_TIMED]
 
-LORE_FONT_SIZE = 13
+LORE_FONT_SIZE = 12
 
 # --- La grille de l'écran --------------------------------------------------- #
 MARGIN = 44
@@ -88,12 +88,12 @@ LEFT_WIDTH = 520
 RIGHT_X = LEFT_X + LEFT_WIDTH + COLUMN_GAP
 RIGHT_WIDTH = C.WINDOW_WIDTH - MARGIN - RIGHT_X
 
-BUTTON_HEIGHT = 48
-BUTTON_GAP = 8
+BUTTON_HEIGHT = 42
+BUTTON_GAP = 6
 BUTTON_COUNT = 3
 BUTTONS_TOP = PANELS_BOTTOM + BUTTON_COUNT * BUTTON_HEIGHT + (BUTTON_COUNT - 1) * BUTTON_GAP
 
-LORE_BOTTOM = BUTTONS_TOP + 18
+LORE_BOTTOM = BUTTONS_TOP + 16
 
 # Colonnes du tableau des scores. Les largeurs font exactement la largeur utile
 # du panneau : si vous en changez une, ajustez les autres.
