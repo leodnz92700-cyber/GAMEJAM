@@ -176,16 +176,19 @@ class Level:
         for plate in self.plate_list:
             if not plate.update_pressed(player, self.corpse_list):
                 continue
-            audio.play("plate_click", volume=0.5)
+            audio.play("plate_press" if plate.is_pressed else "plate_release")
             door = self.doors_by_id.get(plate.door_id or "")
             if door is None:
                 continue
             if plate.is_pressed:
                 self.open_door(door)
+                # Le battant s'entend, meme si le joueur ne le voit pas d'ici :
+                # c'est ce qui lui apprend que la plaque commande une porte.
+                audio.play("door_open")
             else:
                 self.close_door(door)
 
-    def update_archers(self, delta_time: float) -> None:
+    def update_archers(self, delta_time: float, audio=None, listener=None) -> None:
         """
         Fait tirer les archers et avancer les flèches.
 
@@ -197,7 +200,15 @@ class Level:
         reste là.
         """
         for archer in self.archer_list:
-            archer.update_emitter(delta_time, self.arrow_list)
+            arrow = archer.update_emitter(delta_time, self.arrow_list)
+            if arrow is None or audio is None:
+                continue
+            # Le tir ne s'entend qu'a trois tuiles, et d'autant plus fort qu'on
+            # est pres : c'est ce qui previent le joueur qu'il entre dans la
+            # ligne de tir avant d'avoir vu l'archer.
+            volume = self._audible_volume(archer, listener)
+            if volume > 0:
+                audio.play("arrow_shot", volume=volume)
 
         for arrow in list(self.arrow_list):
             arrow.advance(delta_time)
@@ -210,7 +221,42 @@ class Level:
             if blocked:
                 arrow.remove_from_sprite_lists()
 
-    def update_animations(self, delta_time: float) -> None:
+    @staticmethod
+    def _audible_volume(sprite, listener) -> float:
+        """
+        Volume d'un bruit de decor, selon sa distance au joueur.
+
+        Renvoie 1.0 quand le joueur est dessus, `AUDIO_NEAR_MIN_VOLUME` pile a la
+        limite de portee, et 0.0 au-dela. Les pieges battent TOUS en phase et les
+        archers tirent trois fois par seconde sans jamais s'arreter : entendus
+        depuis tout l'etage, ils deviennent un vacarme ou le joueur ne distingue
+        plus rien. Attenues, ils redeviennent une INFORMATION — il entend qu'il
+        approche d'un piege, de plus en plus fort, avant meme de le voir.
+
+        La montee n'est pas lineaire (`AUDIO_NEAR_CURVE`) : un bruit qui grandit
+        proportionnellement a l'approche s'entend deja beaucoup a mi-distance, et
+        le joueur ne perçoit plus le rapprochement. Courbee, elle reste discrete
+        de loin et grimpe franchement dans les dernieres tuiles.
+        """
+        if listener is None:
+            return 0.0
+        distance = arcade.math.get_distance(
+            sprite.center_x, sprite.center_y, listener.center_x, listener.center_y
+        )
+        if distance >= C.AUDIO_NEAR_RANGE:
+            return 0.0
+        # `closeness` va de 0 a la limite de portee jusqu'a 1 sur le piege lui-meme.
+        closeness = 1.0 - distance / C.AUDIO_NEAR_RANGE
+        volume = C.AUDIO_NEAR_MIN_VOLUME + (1.0 - C.AUDIO_NEAR_MIN_VOLUME) * (
+            closeness ** C.AUDIO_NEAR_CURVE
+        )
+        # Le plancher ne peut pas s'arreter net a la limite, sinon le son
+        # APPARAIT a 12 % en franchissant la derniere tuile : exactement
+        # l'impression d'interrupteur qu'on cherche a eviter. On l'eteint donc
+        # progressivement sur la derniere tuile de portee.
+        return volume * min(1.0, (C.AUDIO_NEAR_RANGE - distance) / C.TILE_SIZE)
+
+    def update_animations(self, delta_time: float, audio=None, listener=None) -> None:
         self.clock += delta_time
         for item in self.item_list:
             item.update_animation(delta_time)
@@ -218,9 +264,21 @@ class Level:
             torch.update(delta_time)
         for corpse in self.corpse_list:
             corpse.update(delta_time)
+        # Tous les pieges de l'etage battent EN PHASE : c'est ce qui permet au
+        # joueur d'apprendre le rythme, mais cela veut dire qu'ils jaillissent
+        # tous au meme instant. On ne joue donc leur son QU'UNE FOIS par
+        # jaillissement, au volume du piege le PLUS PROCHE : sinon deux pieges
+        # cote a cote sonnent deux fois plus fort qu'un seul, alors qu'ils
+        # barrent le meme couloir.
+        nearest = 0.0
         for trap in self.trap_list:
-            if isinstance(trap, SpikeTrap):
-                trap.update_cycle(self.clock)
+            if not isinstance(trap, SpikeTrap):
+                continue
+            trap.update_cycle(self.clock)
+            if trap.just_struck and audio is not None:
+                nearest = max(nearest, self._audible_volume(trap, listener))
+        if nearest > 0:
+            audio.play("spike_strike", volume=nearest)
 
     def set_torch_panic(self, panic: float) -> None:
         """Transmet le niveau de tension aux torches (elles vacillent plus fort)."""

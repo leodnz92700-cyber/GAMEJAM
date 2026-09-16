@@ -49,6 +49,10 @@ class SpikeTrap(arcade.Sprite):
         )
         super().__init__(self.frames[0], center_x=center_x, center_y=center_y)
         self.frame_index = 0
+        # Vrai pendant la seule frame ou les pointes SORTENT. Le son du piege se
+        # joue sur ce front : le jouer tant que les pointes sont dehors donnerait
+        # un grincement continu, et le rythme deviendrait illisible.
+        self.just_struck = False
 
     @property
     def is_lethal(self) -> bool:
@@ -63,6 +67,7 @@ class SpikeTrap(arcade.Sprite):
         couloir de deux tuiles jaillissent donc en même temps, sinon il serait
         impossible de traverser.
         """
+        previous = self.frame_index
         phase = clock % C.SPIKE_CYCLE_DURATION
         if phase < C.SPIKE_SAFE_DURATION:
             self.frame_index = 0
@@ -72,6 +77,7 @@ class SpikeTrap(arcade.Sprite):
                 len(self.frames) - 1, 1 + int(progress * (len(self.frames) - 1))
             )
         self.texture = self.frames[self.frame_index]
+        self.just_struck = previous == 0 and self.frame_index != 0
 
 
 class Arrow(arcade.Sprite):

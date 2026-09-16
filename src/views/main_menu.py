@@ -149,10 +149,10 @@ class MainMenuView(arcade.View):
     def on_show_view(self) -> None:
         self.window.background_color = C.COLOR_BACKGROUND
         self.leaderboard = self.score.load_leaderboard()
-        self.audio.start_ambience()
+        self.audio.start_menu_music()
 
     def on_hide_view(self) -> None:
-        self.audio.stop_ambience()
+        self.audio.stop_all()
 
     # ------------------------------------------------------------------ #
     # État du menu
@@ -171,30 +171,59 @@ class MainMenuView(arcade.View):
     # ------------------------------------------------------------------ #
     def on_key_press(self, key: int, modifiers: int) -> None:
         if key in (arcade.key.DOWN, arcade.key.S):
-            self.buttons.move(1)
+            self._move_selection(1)
         elif key in (arcade.key.UP, arcade.key.Z):
-            self.buttons.move(-1)
+            self._move_selection(-1)
         elif key in (arcade.key.LEFT, arcade.key.Q) and self.buttons.selected == 0:
             self._cycle_mode(-1)
+            self.audio.play("ui_hover")
         elif key in (arcade.key.RIGHT, arcade.key.D) and self.buttons.selected == 0:
             self._cycle_mode(1)
+            self.audio.play("ui_hover")
+        elif key == arcade.key.M:
+            self._toggle_mute()
         elif key in (arcade.key.ENTER, arcade.key.NUM_ENTER, arcade.key.SPACE):
             self._activate(self.buttons.selected)
         elif key == arcade.key.ESCAPE:
             arcade.close_window()
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float) -> None:
+        previous = self.buttons.selected
         self.buttons.on_mouse_motion(x, y)
+        self._play_hover(previous)
 
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int) -> None:
         if self.buttons.on_mouse_press(x, y) is not None:
             self._activate(self.buttons.selected)
 
+    def _move_selection(self, step: int) -> None:
+        previous = self.buttons.selected
+        self.buttons.move(step)
+        self._play_hover(previous)
+
+    def _play_hover(self, previous: int) -> None:
+        """
+        Son de survol, et seulement s'il se passe quelque chose.
+
+        Sans cette comparaison, le moindre mouvement de souris sur un bouton
+        deja selectionne relancerait le son a chaque pixel parcouru.
+        """
+        if self.buttons.selected != previous:
+            self.audio.play("ui_hover")
+
     def _cycle_mode(self, step: int) -> None:
+        # Pas de son ici : ce serait le deuxieme, par-dessus le clic, quand on
+        # change de mode avec Entree.
         self.mode_index = (self.mode_index + step) % len(MODE_ORDER)
         self._refresh_labels()
 
+    def _toggle_mute(self) -> None:
+        """Coupe-son (touche M), le meme que dans le jeu."""
+        if not self.audio.toggle_mute():
+            self.audio.start_menu_music()
+
     def _activate(self, index: int) -> None:
+        self.audio.play("ui_click")
         if index == 0:
             self._cycle_mode(1)
         elif index == 1:
@@ -205,7 +234,7 @@ class MainMenuView(arcade.View):
     def _start_game(self) -> None:
         from src.views.game_view import GameView
 
-        self.audio.stop_ambience()
+        self.audio.stop_all()
         game = GameView(mode=self.mode)
         game.setup()
         self.window.show_view(game)

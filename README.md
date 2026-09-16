@@ -332,15 +332,15 @@ GAMEJAM/
 │   └── smoke_test.py                # [Melvin] Rejoue une partie complète et capture des écrans
 │
 ├── assets/
-│   ├── audio/                       # [Léo] Sons placeholder générés, à remplacer par les vrais (mêmes noms)
-│   │   ├── ambience_drone.wav       # [Léo] Nappe de fond, son volume monte avec la tension
-│   │   ├── growl_far.wav            # [Léo] Palier 1 : grondement lointain
-│   │   ├── scratch.wav              # [Léo] Palier 2 : griffes sur la pierre
-│   │   ├── steps_close.wav          # [Léo] Palier 3 : des pas courent
-│   │   ├── heartbeat.wav            # [Léo] Palier 4 : la créature est lâchée
-│   │   ├── devoured.wav             # [Léo] Mort subie
-│   │   ├── death_vial.wav           # [Léo] Mort choisie
-│   │   └── pickup, door_open, torch_place, plate_click, trap_trigger  # [Léo] Interactions
+│   ├── audio/                       # [Léo] TOUS les sons du jeu. Inventaire complet : assets/audio/README.md
+│   │   ├── player/                  # [Léo] footstep, breathing, pain
+│   │   ├── items/                   # [Léo] potion, key, torch : un get.wav et un use.wav chacun
+│   │   ├── misc/doors/              # [Léo] open_wooden_door, door_locked
+│   │   ├── misc/plate/              # [Léo] plaque enfoncée / relâchée
+│   │   ├── misc/trap/               # [Léo] spiketrap_open + arrow_shot (encore un placeholder)
+│   │   ├── monster/                 # [Léo] 4 alertes (une par palier), final_timer, chase, kill
+│   │   ├── ambiance/                # [Léo] water_drop, squeak, et la musique du menu
+│   │   └── menu/                    # [Léo] hover_button, button_click
 │   ├── fonts/                       # [Erwan] Police pixel de l'interface
 │   │   ├── PixelifySans.ttf         # [Erwan] Pixelify Sans, licence SIL OFL
 │   │   └── OFL.txt                  # [Erwan] La licence, à conserver en cas de redistribution
@@ -444,6 +444,7 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
 | `E` | interagir : ramasser un objet, ouvrir une porte, parler — l'invite n'apparaît que si quelque chose est à portée |
 | `F` | planter une torche (éclaire la zone définitivement) |
 | `R` | boire la fiole : mort volontaire |
+| `M` | couper / rétablir le son (utile pour montrer le jeu dans une salle bruyante) |
 | `Échap` | retour au menu |
 
 ## Ce qui fonctionne déjà
@@ -499,7 +500,8 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
   (donc une porte ouverte) et bloquent les flèches, mais on marche dessus :
   un cadavre ne condamne jamais un couloir.
 - **Créature** : lâchée après un délai fixe, jamais affiché. Elle s'annonce par
-  des sons (grondement lointain, grattements, pas qui courent) et par le
+  des sons (un grognement different par palier, sa propre respiration qui
+  s'affole, la musique de poursuite quand la bete approche) et par le
   vacillement des torches, puis traque le joueur par le plus court chemin. Elle
   n'est visible qu'à très courte distance.
 - **Objets** : clés, fioles, torches. Inventaire limité à 3 emplacements.
@@ -532,7 +534,8 @@ conflits Git sont rares.
 | ajouter un objet ramassable | `src/entities/items.py` + `src/mechanics/interaction_manager.py` |
 | faire vivre les PNJ | `src/entities/npc.py` (squelette prêt, aucun PNJ posé) |
 | changer le comportement de la créature | `src/mechanics/monster_manager.py` |
-| remplacer les sons | déposer vos fichiers dans `assets/audio/` sous les mêmes noms (voir `audio_manager.py`) |
+| remplacer un son | déposer le fichier sous le même nom (inventaire : `assets/audio/README.md`) |
+| régler le volume d'un son | `AUDIO_VOLUMES` dans `src/constants.py` |
 | changer de sprites | `tools/import_pack_assets.py` (le jeu ne lit que `assets/sprites/`) |
 | retoucher le HUD ou les menus | `src/ui/` |
 | modifier la boucle de jeu | `src/views/game_view.py` |
@@ -565,9 +568,13 @@ dans `map/dungeonsAndPixels/`. Le jeu ne lit jamais ce dossier directement :
 et `assets/maps/` sous les noms attendus par le code. Pour changer de pack ou de
 personnage, c'est le seul fichier à modifier.
 
-Les **sons** sont encore des placeholders de synthèse générés en Python. Déposez
-vos vrais fichiers dans `assets/audio/` sous les mêmes noms (voir
-`src/mechanics/audio_manager.py`) et ne relancez plus le générateur.
+Les **sons** sont en place et branchés : `assets/audio/README.md` liste, pour
+chaque fichier, le moment exact où il joue. Pour en remplacer un, déposez le
+vôtre sous le même nom — il n'y a pas une ligne de code à toucher. Trois sons
+seulement sont encore des placeholders de synthèse (`misc/trap/arrow_shot.wav`,
+`misc/victory.wav`, `misc/game_over.wav`) ; le générateur ne les réécrit jamais
+s'ils existent déjà. Les volumes se règlent dans `AUDIO_VOLUMES`
+(`src/constants.py`).
 
 Attention si vous changez les sprites de personnages : leur boîte de collision
 est un petit rectangle centré, pas la taille de l'image. Le héros fait 32x48
@@ -581,5 +588,6 @@ changement de sprite, relancez `python tools/walk_test.py`.
   `monster_manager` si vous voulez punir l'accumulation de dépouilles.
 - Pas de mémoire des zones explorées (la carte ne reste pas partiellement
   visible après la mort) : `lighting_engine` est l'endroit pour l'ajouter.
-- Les sons sont encore des placeholders de synthèse.
+- Trois sons sur trente sont encore des placeholders de synthèse : le tir de
+  l'archer, la victoire et la défaite.
 - Pas d'animation d'attaque (le pack en fournit pourtant une).

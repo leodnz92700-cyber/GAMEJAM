@@ -151,6 +151,11 @@ class InteractionManager:
         if target is None:
             return ""
         if not target.actionable:
+            # La serrure resiste : le bruit dit au joueur que l'action a bien ete
+            # tentee et qu'elle a echoue, la ou un simple texte gris passe
+            # inapercu dans le noir.
+            if target.kind == "door":
+                self.audio.play("door_locked")
             return target.prompt
 
         if target.kind == "item":
@@ -177,7 +182,7 @@ class InteractionManager:
             
             if not player.inventory.is_full:
                 player.pick_up(key_item)
-                self.audio.play("pickup")
+                self.audio.play_item_pickup(C.ITEM_KEY)
                 return npc.next_line()
             else:
                 sprite = ItemSprite(key_item, npc.center_x, npc.center_y - 20)
@@ -190,7 +195,7 @@ class InteractionManager:
         item = item_sprite.item
         player.pick_up(item)
         item_sprite.remove_from_sprite_lists()
-        self.audio.play("pickup")
+        self.audio.play_item_pickup(item.type)
         if item.properties.get("dropped"):
             self.score.stats.corpses_looted += 1
             return f"Tu reprends {item.phrase} pres de ton ancien corps."
@@ -204,6 +209,8 @@ class InteractionManager:
         player.inventory.remove(key)
         level.open_door(door)
         self.score.stats.doors_opened += 1
+        # Deux sons superposes, comme demande : le tour de cle et le battant.
+        self.audio.play("key_use")
         self.audio.play("door_open")
         return "La serrure cede."
 
@@ -218,7 +225,7 @@ class InteractionManager:
         player.inventory.remove(torch_item)
         level.add_torch(player.center_x, player.center_y)
         self.score.stats.torches_placed += 1
-        self.audio.play("torch_place")
+        self.audio.play("torch_use")
         return "Torche plantee. Cette zone restera eclairee."
 
     # ------------------------------------------------------------------ #
@@ -235,4 +242,8 @@ class InteractionManager:
         if vial is None:
             return False
         player.inventory.remove(vial)
+        # Le son part ICI et pas dans `death_manager` : la mort n'y est traitee
+        # qu'une fois le personnage effondre, presque une seconde plus tard, et
+        # le joueur n'entendrait sa gorgee qu'apres etre tombe.
+        self.audio.play("potion_use")
         return True

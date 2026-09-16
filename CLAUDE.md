@@ -40,8 +40,9 @@ Une partie doit tenir en **moins de 5 minutes**.
 ### Les trois règles de game design à ne jamais casser
 
 1. **Aucun compte à rebours affiché** pour la créature. Le joueur ne dispose que
-   du son (grondement lointain → griffes → pas qui courent → battements de
-   coeur) et du **vacillement des torches**. Le seul chronomètre autorisé à
+   du son (un grognement différent à chacun des quatre paliers, sa propre
+   respiration qui s'affole, puis la musique de poursuite) et du **vacillement
+   des torches**. Le seul chronomètre autorisé à
    l'écran est celui du mode « Contre-la-montre », qui est une règle de mode et
    non la créature.
 2. **Mourir doit toujours rester possible.** La fiole est unique mais réapparaît
@@ -147,6 +148,9 @@ jour quand vous ajoutez un fichier.
 - Créature : délai fixe, paliers sonores de tension, traque par BFS.
 - Écrans d'accueil, de victoire et de défaite, classement local, 3 modes de
   jeu (Exploration / Sursis 8 morts / Contre-la-montre 5 min).
+- **Son complet** : pas, respiration, cri de douleur, objets, portes, plaques,
+  pièges, tir de l'archer, 4 alertes de la créature, musique de poursuite,
+  jumpscare, menu et écrans de fin (voir §8).
 - ATH entièrement transparent (voir §6).
 
 ### Pas encore fait (pistes pour un coéquipier)
@@ -154,8 +158,9 @@ jour quand vous ajoutez un fichier.
 - Les PNJ existent en tant que classe, **aucun n'est posé dans les cartes**.
 - La créature ne dévore pas les cadavres (le pitch l'évoque) → `monster_manager`.
 - Pas de mémoire des zones explorées → `lighting_engine`.
-- Les sons sont des placeholders de synthèse → remplacer les fichiers dans
-  `assets/audio/` **sous les mêmes noms**, sans relancer le générateur.
+- Trois sons sur trente sont encore des placeholders de synthèse :
+  `misc/trap/arrow_shot.wav`, `misc/victory.wav`, `misc/game_over.wav`. Déposer
+  le vrai fichier **sous le même nom** suffit.
 - Pas d'animation d'attaque de la créature (le pack en fournit pourtant une).
 
 ---
@@ -270,7 +275,7 @@ c'est lui qui détecte qu'un héros est devenu trop large pour un couloir.
 occupe la fenêtre entière. `HUD_HEIGHT` **n'existe plus** — si vous le voyez
 quelque part, c'est un reste à supprimer.
 
-La fenêtre fait **1280 x 704**, soit exactement une zone de 40 x 22 tuiles.
+La fenêtre fait **1280 x 640**, soit exactement une zone de 40 x 20 tuiles.
 Ces dimensions sont **calculées** dans `constants.py` à partir de `ZONE_COLS`,
 `ZONE_ROWS` et `TILE_SIZE`, et `tools/gen_placeholder_maps.py` les **importe** :
 le jeu et les cartes ne peuvent plus diverger. Si vous changez la taille d'une
@@ -341,6 +346,12 @@ Trois règles de mise en page, et elles expliquent tout le code de
 3. **Un panneau ne se dimensionne pas au contenu, c'est le contenu qui doit y
    entrer.** Le lore de l'accueil est calibré sur six lignes : un paragraphe de
    plus déborde par le bas, silencieusement. Vérifiez à l'écran.
+4. **Aucune ordonnée en dur.** Tout part de `C.WINDOW_HEIGHT`. Les écrans de fin
+   étaient calés en coordonnées absolues sur une fenêtre de 704 px ; `ZONE_ROWS`
+   est passé de 22 à 20, la fenêtre à 640, et le titre « TU ES SORTI » sortait
+   par le haut sans que rien ne le signale. Le panneau de statistiques prend
+   désormais **ce qui reste** entre le verdict et la balance, il ne peut donc
+   plus chevaucher ni l'un ni l'autre.
 
 Le **logo** (`assets/ui/logo.png`, chargé par `src/ui/logo.py`) est livré sur un
 **fond noir opaque**, pas sur du transparent. Posé tel quel, il collerait un
@@ -381,7 +392,7 @@ Ordre de priorité, important pour la lisibilité dans le noir :
 objet au sol → porte fermée → PNJ.
 
 Commandes : `ZQSD`/flèches déplacer · `E` interagir · `F` planter une torche ·
-`R` boire la fiole · `Échap` menu.
+`R` boire la fiole · `M` couper le son · `Échap` menu.
 
 ---
 
@@ -440,7 +451,71 @@ que le joueur le demande.**
 
 ---
 
-## 8. Conventions de code
+## 8. Le son (refait avec les vrais fichiers)
+
+Tous les sons livrés par l'équipe son sont branchés. **Le code ne connaît jamais
+un chemin de fichier** : il demande un nom LOGIQUE (`door_open`, `alert_close`),
+et `audio_manager.SOUND_FILES` sait où le trouver. Le volume de chaque son est
+dans `constants.AUDIO_VOLUMES`. Remplacer un son = déposer le fichier sous le
+même nom ; l'inventaire complet, avec le moment exact où chacun joue, est dans
+**`assets/audio/README.md`**.
+
+### Décisions tranchées par l'équipe
+
+- **Il n'y a PAS de nappe de fond.** `ambience_drone.wav` et
+  `set_ambience_intensity()` ont été supprimés : le fond sonore du jeu est le
+  **silence**, troué de loin en loin par une goutte d'eau ou un grincement. Une
+  nappe continue noyait les signaux qui remplacent le compte à rebours. Ne la
+  réintroduisez pas.
+- **Trois signaux, et eux seuls, disent au joueur combien de temps il lui
+  reste** : un grognement différent par palier (`TENSION_CUES`, exactement les
+  quatre murmures rouges de l'ATH), sa respiration (souffle occasionnel au
+  calme, halètement **en boucle** à partir du palier `near`), et la musique de
+  poursuite. Baisser leur volume revient à retirer au joueur sa seule horloge.
+- **La musique de poursuite se déclenche plus LOIN que la créature n'est
+  visible** (`AUDIO_CHASE_RADIUS` = 340 px contre `MONSTER_VISIBLE_RADIUS` =
+  160) : il doit l'entendre arriver avant de la voir. Elle continue
+  `AUDIO_CHASE_RELEASE_DELAY` secondes après qu'elle s'éloigne, sinon elle
+  clignote quand la bête tourne autour de lui.
+- **Les bruits de décor sont atténués avec la DISTANCE au joueur**
+  (`Level._audible_volume`) : volume plein sur place, plus rien au-delà de
+  `AUDIO_NEAR_RANGE` (8 tuiles, soit à peu près la portée d'une flèche). Tous
+  les pièges de l'étage battent en phase et les archers tirent trois fois par
+  seconde sans jamais s'arrêter : entendus au même volume de partout, ils
+  formaient un vacarme où plus rien n'était lisible ; atténués, ils redeviennent
+  une **information**, le joueur entend qu'il approche d'un piège avant de le
+  voir. Deux points à ne pas défaire :
+  - la montée n'est **pas linéaire** (`AUDIO_NEAR_CURVE`) et part d'un plancher
+    audible (`AUDIO_NEAR_MIN_VOLUME`), lui-même éteint en douceur sur la
+    dernière tuile de portée. Une simple rampe linéaire jusqu'à zéro donnait
+    exactement l'impression d'un **interrupteur** : soit on entend, soit non ;
+  - un jaillissement de pointes ne joue qu'**une fois** par cycle, au volume du
+    piège le plus proche, sinon deux pièges qui barrent le même couloir sonnent
+    deux fois plus fort qu'un seul.
+- **Chaque son part au moment où le joueur agit, pas à la fin de la mise en
+  scène.** La gorgée de fiole sonne dans `interaction_manager.consume_vial` et
+  le cri de douleur dans `game_view._die` : `death_manager.kill()` n'est appelé
+  qu'une seconde plus tard, quand le corps a fini de tomber, et le son y
+  arriverait après coup.
+- La **musique du menu** tourne aussi sur les écrans de victoire et de défaite :
+  le son ne se coupe pas entre la fin d'une partie et le retour à l'accueil.
+- Le **son de survol** du menu ne joue que si la sélection CHANGE, sinon le
+  moindre mouvement de souris le relance à chaque pixel.
+
+### Pièges déjà rencontrés
+
+- **Vérifiez la durée des fichiers livrés.** Le premier `pressure_plate.wav`
+  durait 22,9 s pour 6,3 Mo (quatre prises à la suite avec leur réverbération) :
+  monter sur une plaque déclenchait un son de 23 s. Il a été recoupé à 0,9 s.
+  Un bruitage d'interaction tient en moins d'une seconde.
+- Un son **introuvable ou illisible** est retenu dans `_unavailable` : sans ce
+  cache, une boucle qui n'a pas pu démarrer était retentée soixante fois par
+  seconde.
+- `stop_ambience()` désarme l'ambiance aléatoire, `stop_all()` se contente de
+  couper les boucles. C'est ce qui permet à la touche `M` de couper le son sans
+  tuer l'ambiance définitivement.
+
+## 9. Conventions de code
 
 - **Tout en français** : commentaires, docstrings, textes du jeu, messages de
   commit. Les identifiants restent en anglais.
@@ -454,7 +529,7 @@ que le joueur le demande.**
 - Ne créez pas de fichier « au cas où ». Ne laissez pas de code mort sans un
   commentaire disant à quoi il est destiné.
 
-## 9. Travailler avec l'équipe
+## 10. Travailler avec l'équipe
 
 Six personnes, branche `main`, travail en parallèle. Le `README.md` attribue
 chaque fichier à quelqu'un — **restez dans le périmètre demandé** : une

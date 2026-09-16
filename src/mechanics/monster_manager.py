@@ -7,12 +7,18 @@ La menace. Ce module remplace le compte à rebours du jeu : aucun chiffre n'est
 affiché au joueur, seule l'ambiance l'informe du temps qu'il lui reste.
 
 Déroulé d'une vie :
-  1. calme      : nappe d'ambiance seule ;
+  1. calme      : le silence, troue de loin en loin par une goutte d'eau ;
   2. far        : grondements lointains ;
   3. near       : grattements contre les murs, les torches commencent a vaciller ;
   4. close      : des pas courent dans les couloirs, vacillement maximal ;
   5. released   : la créature est lâchée dans le labyrinthe et vient droit sur
                   le joueur. Si elle le touche, il est dévoré (aucun cadavre).
+
+Chaque palier a SON grognement (`audio_manager.TENSION_CUES`), et le meme texte
+s'affiche en rouge en haut de l'ecran : le joueur lit et entend la meme chose au
+meme instant. A partir du palier `near`, sa respiration s'affole en continu, et
+la musique de poursuite demarre des que la creature s'approche — avant qu'elle
+ne soit visible.
 
 La créature apparaît loin du joueur puis le rejoint par le plus court chemin.
 Elle n'est dessinée qu'à très courte distance : le reste du temps, elle est là
@@ -105,6 +111,9 @@ class MonsterManager:
         self.whisper = ""
         self.whisper_timer = 0.0
         self._repath_timer = 0.0
+        # La bete n'est plus la : la musique de poursuite doit s'arreter net,
+        # sans attendre le delai de deconnexion.
+        self.audio.stop_chase()
 
     @property
     def tension(self) -> float:
@@ -130,10 +139,14 @@ class MonsterManager:
             if self.whisper_timer <= 0:
                 self.whisper = ""
 
-        self.audio.set_ambience_intensity(self.tension)
+        # La respiration du heros est l'un des trois signaux qui remplacent le
+        # compte a rebours : un souffle de temps en temps tant que la bete est
+        # loin, un halettement continu des qu'elle se rapproche.
+        self.audio.update_breathing(delta_time, self.stage, self.tension)
         level.set_torch_panic(max(0.0, (self.tension - 0.5) * 2.0))
 
         if self.monster is None:
+            self.audio.update_chase(delta_time, near=False)
             return False
 
         self._chase(delta_time, player, level)
@@ -141,6 +154,10 @@ class MonsterManager:
         distance = arcade.math.get_distance(
             self.monster.center_x, self.monster.center_y, player.center_x, player.center_y
         )
+        # La musique de poursuite se declenche plus LOIN que le rayon ou la
+        # creature devient visible : le joueur doit l'entendre arriver avant de
+        # la voir, sinon il meurt sans avoir eu le temps de fuir.
+        self.audio.update_chase(delta_time, near=distance <= C.AUDIO_CHASE_RADIUS)
         return distance <= C.MONSTER_KILL_RADIUS
 
     def _update_stage(self, level) -> None:

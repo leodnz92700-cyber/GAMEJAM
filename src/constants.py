@@ -42,7 +42,7 @@ TILE_SIZE = 32
 ZONE_COLS = 40
 ZONE_ROWS = 20
 WINDOW_WIDTH = ZONE_COLS * TILE_SIZE          # 1280
-WINDOW_HEIGHT = ZONE_ROWS * TILE_SIZE         # 704
+WINDOW_HEIGHT = ZONE_ROWS * TILE_SIZE         # 640 (ZONE_ROWS est passe de 22 a 20)
 
 # Le viewport de jeu, c'est l'écran entier. Ces alias restent pour la lisibilité
 # du code de rendu (moteur de lumière, fondus, jumpscare).
@@ -137,7 +137,7 @@ SCREAMER_SHAKE = 26.0                # amplitude du tremblement, en pixels
 # Paliers de tension, en fraction de MONSTER_RELEASE_TIME.
 # À chaque palier franchi, monster_manager déclenche un signal d'ambiance.
 TENSION_STAGES = (
-    (0.00, "calm"),      # silence, nappe d'ambiance seule
+    (0.00, "calm"),      # silence : seuls les bruits d'ambiance aleatoires
     (0.45, "far"),       # grondements lointains
     (0.68, "near"),      # grattements contre les murs
     (0.86, "close"),     # pas qui courent, torches qui vacillent fort
@@ -302,3 +302,99 @@ DEATH_VIAL = "vial"          # mort volontaire : cadavre + inventaire conserves
 DEATH_TRAP = "trap"          # mort par piege : cadavre + inventaire conserves
 DEATH_ARROW = "arrow"        # fleche de l'archer : mêmes conséquences qu'un piege
 DEATH_DEVOURED = "devoured"  # mort par la creature : aucun cadavre, tout est perdu
+
+# --------------------------------------------------------------------------- #
+# Son
+# --------------------------------------------------------------------------- #
+# Tout le mixage du jeu est ici : c'est le seul endroit a ouvrir pour regler le
+# son sans lire une ligne de code. `src/mechanics/audio_manager.py` ne connait
+# que les CHEMINS des fichiers, jamais leur volume.
+#
+# Regle de game design qui commande tout ce bloc : il n'y a AUCUN compte a
+# rebours affiche. Le son est la seule horloge du joueur — les quatre alertes du
+# monstre, la respiration qui s'affole, la musique de poursuite. Baisser ces
+# volumes, c'est retirer au joueur sa seule information.
+AUDIO_MASTER_VOLUME = 0.8             # volume general, applique a tout le reste
+
+# Volume de chaque son, par nom logique (voir SOUND_FILES dans audio_manager).
+AUDIO_VOLUMES = {
+    # --- Joueur ---------------------------------------------------------- #
+    "footstep": 0.30,          # discret : il sonne plusieurs fois par seconde
+    "breathing": 0.55,         # valeur de base, montee par la tension
+    "pain": 0.85,
+    # --- Objets ---------------------------------------------------------- #
+    "potion_get": 0.75,
+    "potion_use": 0.90,        # la mort volontaire : elle doit s'entendre
+    "key_get": 0.75,
+    "key_use": 0.80,           # se superpose a l'ouverture de la porte
+    "torch_get": 0.70,
+    "torch_use": 0.75,
+    "pickup": 0.70,            # objets sans son dedie (le bouclier)
+    # --- Environnement ---------------------------------------------------- #
+    "door_open": 0.70,
+    "door_locked": 0.80,       # c'est une reponse a une action du joueur
+    "plate_press": 0.65,
+    "plate_release": 0.65,
+    "spike_strike": 0.55,      # joue une fois par cycle, et seulement dans la zone
+    "arrow_shot": 0.45,        # une toutes les 0,3 s : le moindre exces sature
+    # --- Ambiance ---------------------------------------------------------- #
+    "water_drop": 0.50,
+    "squeak": 0.40,
+    "menu_music": 0.45,
+    # --- Interface --------------------------------------------------------- #
+    "ui_hover": 0.35,
+    "ui_click": 0.55,
+    # --- Le monstre -------------------------------------------------------- #
+    "alert_far": 0.70,
+    "alert_near": 0.80,
+    "alert_close": 0.90,
+    "alert_released": 1.00,
+    "monster_released": 0.90,  # se superpose a l'alerte du lacher
+    "monster_chase": 0.75,
+    "monster_kill": 1.00,
+    # --- Fin de partie ----------------------------------------------------- #
+    "victory": 0.80,
+    "game_over": 0.80,
+}
+
+# --- Pas du joueur ---------------------------------------------------------- #
+AUDIO_FOOTSTEP_INTERVAL = 0.34        # secondes entre deux pas (cale sur PLAYER_SPEED)
+
+# --- Respiration ------------------------------------------------------------ #
+# Deux regimes, comme demande : un souffle qui revient de temps en temps quand
+# tout est calme, et un halettement continu des que la bete se rapproche.
+AUDIO_BREATH_RANDOM_MIN = 18.0        # delai mini entre deux souffles au calme
+AUDIO_BREATH_RANDOM_MAX = 38.0        # ... et delai maxi
+AUDIO_BREATH_CALM_VOLUME = 0.35       # le souffle occasionnel reste en retrait
+AUDIO_BREATH_PANIC_STAGES = ("near", "close", "released")   # a partir d'ici, en continu
+
+# --- Ambiance aleatoire ----------------------------------------------------- #
+# Il n'y a PLUS de nappe de fond : le silence est le fond sonore du jeu, troue
+# de temps en temps par une goutte d'eau ou un grincement. C'est ce silence qui
+# rend les alertes du monstre audibles.
+AUDIO_AMBIENCE_MIN_DELAY = 12.0       # delai mini entre deux bruits d'ambiance
+AUDIO_AMBIENCE_MAX_DELAY = 35.0       # ... et delai maxi
+
+# --- Sons du decor : pieges a pointes et fleches ----------------------------- #
+# Ces deux sons se repetent sans arret (un piege toutes les 3 s, une fleche
+# toutes les 0,3 s). Ils sont donc attenues avec la distance au joueur : c'est ce
+# qui permet de localiser le danger a l'oreille dans le noir, au lieu de subir un
+# vacarme permanent.
+#
+# Trois reglages, et ils comptent tous les trois :
+#   - RANGE decide a partir d'ou on commence a percevoir quelque chose ;
+#   - MIN_VOLUME est le "tout petit peu" qu'on entend a cette limite. Sans lui, le
+#     son apparait a zero et le joueur a l'impression d'un interrupteur ;
+#   - CURVE courbe la montee. A 1.0 elle est lineaire ; plus la valeur monte,
+#     plus le son reste discret de loin et grimpe vite dans les dernieres tuiles.
+AUDIO_NEAR_RANGE = 8 * TILE_SIZE      # au-dela de 8 tuiles, silence complet
+AUDIO_NEAR_MIN_VOLUME = 0.12          # volume percu pile a la limite de portee
+AUDIO_NEAR_CURVE = 2.0                # 1 = lineaire, 2 = discret de loin, franc de pres
+
+# --- Musique de poursuite --------------------------------------------------- #
+# La creature n'est DESSINEE qu'a tres courte distance (MONSTER_VISIBLE_RADIUS).
+# La musique, elle, se declenche plus tot : le joueur doit l'entendre arriver
+# avant de la voir, sinon il meurt avant d'avoir compris. Le delai d'arret evite
+# que la musique clignote quand elle tourne autour de lui.
+AUDIO_CHASE_RADIUS = 340.0            # distance a laquelle la poursuite se declenche
+AUDIO_CHASE_RELEASE_DELAY = 3.0       # secondes de musique apres qu'elle s'est eloignee

@@ -15,6 +15,7 @@ from __future__ import annotations
 import arcade
 
 from src import constants as C
+from src.mechanics.audio_manager import AudioManager
 from src.views.end_screen import draw_end_screen
 
 
@@ -24,15 +25,25 @@ class VictoryView(arcade.View):
     def __init__(self, stats):
         super().__init__()
         self.stats = stats
+        self.audio = AudioManager()
 
     def on_show_view(self) -> None:
         self.window.background_color = C.COLOR_BACKGROUND
+        # La fanfare de sortie une fois, puis la musique du menu : l'ecran de fin
+        # et l'ecran d'accueil sonnent pareil, et le son ne se coupe pas entre
+        # les deux.
+        self.audio.play("victory")
+        self.audio.start_menu_music()
+
+    def on_hide_view(self) -> None:
+        self.audio.stop_all()
 
     def on_key_press(self, key: int, modifiers: int) -> None:
         from src.views.main_menu import MainMenuView
 
         if key in (arcade.key.ENTER, arcade.key.NUM_ENTER, arcade.key.SPACE,
                    arcade.key.ESCAPE):
+            self.audio.play("ui_click")
             self.window.show_view(MainMenuView())
 
     def on_draw(self) -> None:

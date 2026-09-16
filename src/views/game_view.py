@@ -154,7 +154,11 @@ class GameView(arcade.View):
         self.score.tick(delta_time)
         self.hud.update(delta_time)
         self.dialog.update(delta_time)
-        self.level.update_animations(delta_time)
+        # Le fond sonore du jeu est le SILENCE : pas de nappe continue, juste
+        # une goutte d'eau ou un grincement de temps en temps. C'est ce silence
+        # qui rend audibles les grognements de la creature.
+        self.audio.update_ambience(delta_time)
+        self.level.update_animations(delta_time, self.audio, self.player)
         self.player.update_animation(delta_time)
         if self.monster_manager.monster is not None:
             self.monster_manager.monster.update_animation(delta_time)
@@ -192,7 +196,7 @@ class GameView(arcade.View):
             self.score.stats.zones_visited.add(self.level.zone)
 
         self.level.update_plates(self.player, self.audio)
-        self.level.update_archers(delta_time)
+        self.level.update_archers(delta_time, self.audio, self.player)
         self.interaction_target = self.interaction.find_target(self.player, self.level)
 
         if self._check_hazards():
@@ -218,6 +222,7 @@ class GameView(arcade.View):
             move_x += 1.0
         self.player.set_movement(move_x, move_y)
         self.player.apply_movement(delta_time)
+        self.audio.update_footsteps(delta_time, moving=bool(move_x or move_y))
 
     def _check_hazards(self) -> bool:
         """Pièges à pointes et fléchettes. Renvoie True si le joueur est mort."""
@@ -261,6 +266,11 @@ class GameView(arcade.View):
         if self.dying_cause is not None or self.screamer.active or self.death_timer > 0:
             return          # une mort est déjà en cours
         self.player.stop()
+        if cause in (C.DEATH_TRAP, C.DEATH_ARROW):
+            # Le cri sonne MAINTENANT, au moment ou les pointes ou la fleche
+            # touchent. `death_manager` n'est appele qu'une seconde plus tard,
+            # quand le corps a fini de tomber : le cri y arriverait apres coup.
+            self.audio.play("pain")
 
         if cause == C.DEATH_DEVOURED:
             result = self.death_manager.kill(self.player, self.level, cause)
@@ -301,7 +311,7 @@ class GameView(arcade.View):
         from src.views.victory_view import VictoryView
 
         self.finished = True
-        self.audio.stop_ambience()
+        self.audio.stop_all()
         self.score.save_run(victory=True)
         self.window.show_view(VictoryView(self.score.stats))
 
@@ -309,7 +319,7 @@ class GameView(arcade.View):
         from src.views.game_over_view import GameOverView
 
         self.finished = True
-        self.audio.stop_ambience()
+        self.audio.stop_all()
         self.score.save_run(victory=False)
         self.window.show_view(GameOverView(self.score.stats, reason))
 
@@ -321,6 +331,12 @@ class GameView(arcade.View):
 
         if key == arcade.key.ESCAPE:
             self._back_to_menu()
+            return
+        if key == arcade.key.M:
+            # Coupe-son : indispensable pour montrer le jeu dans une salle
+            # bruyante ou le laisser tourner sur un stand.
+            muted = self.audio.toggle_mute()
+            self.hud.show_message("Son coupe." if muted else "Son retabli.")
             return
         if (
             self.death_timer > 0
@@ -347,7 +363,7 @@ class GameView(arcade.View):
         from src.views.main_menu import MainMenuView
 
         self.finished = True
-        self.audio.stop_ambience()
+        self.audio.stop_all()
         self.window.show_view(MainMenuView())
 
     # ------------------------------------------------------------------ #

@@ -207,11 +207,71 @@ def make_sounds() -> None:
         write_wav(name, buffer)
 
 
+# --------------------------------------------------------------------------- #
+# Sons pas encore livrés par le sound design
+# --------------------------------------------------------------------------- #
+# Ces trois-là sont écrits sous leur nom DÉFINITIF, dans le dossier définitif :
+# quand le vrai fichier arrive, on le dépose par-dessus et il n'y a pas une ligne
+# de code à toucher. Ils ne sont JAMAIS réécrits s'ils existent déjà — relancer
+# ce script ne peut donc pas effacer une vraie livraison.
+def make_missing_sounds() -> None:
+    rand = noise(11)
+
+    def sample_count(seconds: float) -> int:
+        return int(SAMPLE_RATE * seconds)
+
+    def write_if_absent(name: str, samples: list[float]) -> None:
+        path = AUDIO / name
+        if path.exists():
+            return
+        path.parent.mkdir(parents=True, exist_ok=True)
+        write_wav(name, samples)
+        print(f"  placeholder ecrit : {name}")
+
+    # Tir de l'archer : une corde qui claque. Court et sec — il sonne toutes les
+    # 0,3 s, le moindre traînage devient un bourdonnement.
+    total = sample_count(0.22)
+    shot = []
+    for i in range(total):
+        t = i / SAMPLE_RATE
+        pitch = 900 * math.exp(-t * 26)
+        shot.append(
+            (0.6 * math.sin(2 * math.pi * pitch * t) + 0.4 * rand())
+            * math.exp(-t * 24)
+        )
+    write_if_absent("misc/trap/arrow_shot.wav", shot)
+
+    # Victoire : accord montant, la seule note franchement claire du jeu.
+    total = sample_count(1.6)
+    victory = []
+    for i in range(total):
+        t = i / SAMPLE_RATE
+        value = sum(
+            math.sin(2 * math.pi * freq * t) * (0.34 if t > delay else 0.0)
+            for freq, delay in ((392, 0.0), (523, 0.18), (659, 0.36))
+        )
+        victory.append(value * envelope(i, total, 0.02, 0.5))
+    write_if_absent("misc/victory.wav", victory)
+
+    # Défaite : la même figure, à l'envers et vers le grave.
+    total = sample_count(1.8)
+    game_over = []
+    for i in range(total):
+        t = i / SAMPLE_RATE
+        value = sum(
+            math.sin(2 * math.pi * freq * t) * (0.34 if t > delay else 0.0)
+            for freq, delay in ((330, 0.0), (247, 0.22), (165, 0.44))
+        )
+        game_over.append(value * envelope(i, total, 0.02, 0.55))
+    write_if_absent("misc/game_over.wav", game_over)
+
+
 def main() -> None:
     for folder in (SPRITES, AUDIO, MAPS):
         folder.mkdir(parents=True, exist_ok=True)
     make_light_gradient()
     make_sounds()
+    make_missing_sounds()
     print(f"Assets placeholder générés dans {SPRITES} et {AUDIO}")
 
 

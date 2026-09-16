@@ -55,8 +55,11 @@ class DeathManager:
             level.add_corpse(player.center_x, player.center_y, cause)
             level.drop_items(player.center_x, player.center_y, carried)
             if cause == C.DEATH_VIAL:
+                # Pas de son ici : la gorgee a deja sonne au moment ou le joueur
+                # a bu (`interaction_manager.consume_vial`), et le cri de douleur
+                # des morts subies a sonne a l'impact (`game_view._die`). Quand
+                # on arrive dans cette methode, le corps est deja au sol.
                 message = "Tu bois la fiole. Ton corps reste ici, et tes affaires avec."
-                self.audio.play("death_vial")
             elif cause == C.DEATH_ARROW:
                 # C'est LA mort qui enseigne le jeu : le corps qu'on vient de
                 # laisser est déjà en travers de la ligne de tir.
@@ -64,17 +67,18 @@ class DeathManager:
                     "Une fleche t'a traverse. L'archer ne s'arretera pas : "
                     "ton corps, lui, arrete les fleches."
                 )
-                self.audio.play("trap_trigger")
             else:
                 message = (
                     "Mauvais timing. Les pointes rentrent et ressortent : "
                     "attends ton tour et passe entre deux."
                 )
-                self.audio.play("trap_trigger")
             items_lost = 0
         else:
             message = "Elle t'a devore. Rien ne reste : ni corps, ni objets."
-            self.audio.play("devoured")
+            # La creature tue sur-le-champ : ce son-la part bien au bon moment,
+            # en meme temps que l'eclair du jumpscare.
+            self.audio.stop_chase()
+            self.audio.play("monster_kill")
             items_lost = len(carried)
 
         self.score.stats.record_death(cause)
