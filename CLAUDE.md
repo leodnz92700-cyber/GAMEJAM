@@ -181,6 +181,13 @@ jour quand vous ajoutez un fichier.
   filtrage linéaire le rend flou.
 - Frame-rate independence : `change_x = vitesse * delta_time`, jamais une
   constante par frame.
+- **Ordre de dessin : le décor plat d'abord, puis une passe triée en profondeur**
+  (`game_view._draw_world`). Tout ce qui dépasse de sa tuile — portes, archers,
+  PNJ, créature, héros — est dessiné du `center_y` le plus grand au plus petit,
+  donc du plus lointain au plus proche. Sans ce tri, un personnage debout au NORD
+  d'une porte était dessiné par-dessus elle, alors qu'il se trouve derrière.
+  N'ajoutez pas un sprite haut dans une simple `SpriteList.draw()` : mettez-le
+  dans la liste `tall`.
 
 ### Sprites et boîtes de collision
 
@@ -209,6 +216,11 @@ Deux fonctions de `textures.py` à comprendre avant de toucher aux sprites :
 - **`lift_art(texture, n)`** ajoute des lignes transparentes **en bas** de
   l'image, ce qui fait dessiner le dessin au-dessus de son point de collision.
   C'est ce qui empêche les pieds du personnage de s'enfoncer dans le mur du bas.
+  **La valeur n'est pas libre** : `(hauteur de l'image - hauteur de la boîte) / 2`,
+  soit `(48 - 16) / 2 = 16` pour un personnage 32x48 — c'est `PLAYER_ART_LIFT`,
+  que réutilisent le héros, le cadavre, le PNJ et l'archer. En dessous, le bas du
+  dessin passe SOUS la boîte de collision : collé à un mur, le personnage a les
+  pieds dessinés par-dessus la tuile d'en bas et semble marcher sur le décor.
 
 **Après tout changement de sprite de personnage, relancez `walk_test.py`** :
 c'est lui qui détecte qu'un héros est devenu trop large pour un couloir.
@@ -334,7 +346,9 @@ que le joueur le demande.**
   joueur voie la porte s'ouvrir et se refermer, et comprenne qu'il doit mourir
   dessus.
 - **Le tir vient d'un squelette archer, pas d'un mur.** On le voit, on ne peut
-  ni le tuer ni le pousser, et il est posé dans une **grande salle** pour que la
+  ni le tuer ni le traverser — il est **solide** (`_rebuild_physics`), sans quoi
+  il suffisait de marcher dans son dos pour esquiver ses flèches sans payer le
+  passage —, et il est posé dans une **grande salle** pour que la
   flèche traverse plusieurs tuiles avant de se planter. Sa cadence est
   volontairement infernale (`ARCHER_DEFAULT_INTERVAL = 0.30`) : une traversée à
   l'aveugle est mortelle une fois sur deux, aller-retour compris. **Il ne cesse

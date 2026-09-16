@@ -125,11 +125,21 @@ class GameView(arcade.View):
         """
         (Re)construit le moteur physique.
 
-        Les murs ET les portes fermées bloquent le joueur ; les cadavres non, on
-        marche dessus (une dépouille ne doit jamais condamner un couloir).
+        Les murs, les portes fermées ET les squelettes archers bloquent le
+        joueur. L'archer doit être solide : tant qu'on pouvait le traverser, il
+        suffisait de marcher dans son dos pour esquiver ses flèches sans jamais
+        payer le passage.
+
+        Les cadavres, eux, ne bloquent pas : on marche dessus, une dépouille ne
+        doit jamais condamner un couloir.
         """
         self.physics_engine = arcade.PhysicsEngineSimple(
-            self.player, walls=[self.level.wall_list, self.level.door_blocker_list]
+            self.player,
+            walls=[
+                self.level.wall_list,
+                self.level.door_blocker_list,
+                self.level.archer_list,
+            ],
         )
 
     def _snap_camera(self) -> None:
@@ -385,6 +395,16 @@ class GameView(arcade.View):
         """
         Dessine le monde, du sol vers le dessus.
 
+        Deux couches :
+
+          1. le décor plat (sol, plaques, pointes, murs, cadavres, objets), qui
+             tient entièrement dans sa tuile et ne peut donc rien cacher ;
+          2. tout ce qui est HAUT — portes, squelettes archers, PNJ, créature,
+             héros — dessiné du plus lointain au plus proche, c'est-à-dire du
+             plus haut à l'écran au plus bas. Ces sprites-là dépassent de leur
+             tuile : sans ce tri, un personnage debout au NORD d'une porte ou
+             d'un archer serait dessiné par-dessus, alors qu'il est derrière.
+
         `pixelated=True` partout : les sprites du pack sont du pixel art, un
         filtrage lisse les rendrait flous.
         """
@@ -394,19 +414,21 @@ class GameView(arcade.View):
         level.plate_list.draw(pixelated=True)
         level.trap_list.draw(pixelated=True)
         level.wall_list.draw(pixelated=True)
-        level.door_list.draw(pixelated=True)
-        # L'archer est un personnage, pas du décor : il se dessine APRÈS les
-        # murs, sinon le mur du haut lui couperait la tête.
-        level.archer_list.draw(pixelated=True)
         level.corpse_list.draw(pixelated=True)
         level.torch_list.draw(pixelated=True)
         level.item_list.draw(pixelated=True)
-        level.npc_list.draw(pixelated=True)
-        level.arrow_list.draw(pixelated=True)
+
+        tall = [*level.door_list, *level.archer_list, *level.npc_list]
         if self.monster_manager.monster is not None:
-            arcade.draw_sprite(self.monster_manager.monster, pixelated=True)
+            tall.append(self.monster_manager.monster)
         if self.player.is_alive:
-            arcade.draw_sprite(self.player, pixelated=True)
+            tall.append(self.player)
+        for sprite in sorted(tall, key=lambda sprite: -sprite.center_y):
+            arcade.draw_sprite(sprite, pixelated=True)
+
+        # Les flèches passent par-dessus tout le monde : dans le noir, c'est le
+        # seul indice de danger, il ne doit jamais être caché par un décor.
+        level.arrow_list.draw(pixelated=True)
 
     def _collect_lights(self) -> None:
         """

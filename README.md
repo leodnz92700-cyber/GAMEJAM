@@ -475,7 +475,7 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
   permanence, sinon le niveau devient infranchissable
   (`tools/walk_test.py` le vérifie).
 - **Le squelette archer** : un tireur planté dans une grande salle du chemin,
-  qu'on ne peut ni tuer ni contourner. Il décoche une flèche toutes les 0,3 s en
+  qu'on ne peut ni tuer, ni traverser (il bloque comme un mur), ni contourner. Il décoche une flèche toutes les 0,3 s en
   travers de la pièce, entre les deux ouvertures que le joueur doit emprunter :
   la fenêtre de passage existe, mais elle est si courte qu'on ne la trouve pas
   dans le noir — la première traversée se paie d'une mort, et c'est voulu.

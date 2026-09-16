@@ -71,7 +71,12 @@ PLAYER_HIT_BOX = (20, 16)
 # se posent au bord du couloir au lieu de s'enfoncer dans le mur d'en bas. Ce
 # sont alors la tete et les epaules qui debordent sur le mur du haut, ce qui est
 # la convention en vue de dessus : le personnage passe DEVANT le mur du fond.
-PLAYER_ART_LIFT = 10
+#
+# La valeur n'est pas libre : (hauteur de l'image - hauteur de la boite) / 2,
+# soit (48 - 16) / 2 = 16. En dessous, le bas du dessin depasse sous la boite de
+# collision et les pieds sont dessines PAR-DESSUS la tuile d'en bas — mur, porte
+# ou coffre : le personnage a l'air de marcher sur le decor.
+PLAYER_ART_LIFT = 16
 PLAYER_IDLE_FPS = 6.0
 PLAYER_RUN_FPS = 12.0
 

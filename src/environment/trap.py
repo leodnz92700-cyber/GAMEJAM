@@ -132,8 +132,8 @@ class SkeletonArcher(arcade.Sprite):
         self.direction_name = direction if direction in DIRECTION_VECTORS else "down"
         self.direction = DIRECTION_VECTORS[self.direction_name]
         self.idle_frames, self.shoot_frames = self._load_animations(self.direction_name)
-        # Le squelette fait 32x48 comme le héros : même boîte centrée, même
-        # remontée du dessin pour que ses pieds se posent au bord du couloir.
+        # Le squelette fait 32x48 comme le héros : même boîte, même remontée du
+        # dessin pour que ses pieds se posent au bord du couloir.
         super().__init__(self.idle_frames[0], center_x=center_x, center_y=center_y)
 
         self.interval = interval
@@ -153,14 +153,17 @@ class SkeletonArcher(arcade.Sprite):
         suffix = "side" if side else direction_name
         flipped = direction_name == "left"
         frame_width, frame_height = C.ARCHER_FRAME_SIZE
-        box = tuple(centered_box(20, 16))
+        # Même boîte et même remontée que le héros : l'archer est solide (on ne
+        # le traverse pas pour esquiver ses flèches) et ses pieds ne doivent pas
+        # mordre sur la tuile du dessous. Voir `PLAYER_ART_LIFT`.
+        box = tuple(centered_box(*C.PLAYER_HIT_BOX))
         idle = load_strip(
             f"archer_idle_{suffix}.png", frame_width, frame_height,
-            box, flipped=flipped, lift=8,
+            box, flipped=flipped, lift=C.PLAYER_ART_LIFT,
         )
         shoot = load_strip(
             f"archer_shoot_{suffix}.png", frame_width, frame_height,
-            box, flipped=flipped, lift=8,
+            box, flipped=flipped, lift=C.PLAYER_ART_LIFT,
         )
         return idle, shoot
 
