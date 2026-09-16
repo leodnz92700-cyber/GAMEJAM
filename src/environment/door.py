@@ -102,10 +102,14 @@ def make_door_from_map_object(map_object, loaded_map=None) -> Door:
             row = int(map_object.center_y // 32)
             wall_above = row < loaded_map.height_tiles - 1 and not loaded_map.walkable[row+1][col]
             wall_below = row > 0 and not loaded_map.walkable[row-1][col]
+            wall_left = col > 0 and not loaded_map.walkable[row][col-1]
+            wall_right = col < loaded_map.width_tiles - 1 and not loaded_map.walkable[row][col+1]
             if wall_above or wall_below:
                 passage = "horizontal"
-        elif getattr(map_object, "rotation", 0.0) and abs(map_object.rotation) in (90, 270):
-            passage = "horizontal"
+            elif wall_left or wall_right:
+                passage = "vertical"
+            elif getattr(map_object, "rotation", 0.0) and abs(map_object.rotation) in (90, 270):
+                passage = "horizontal"
         
     return Door(
         center_x=map_object.center_x,
