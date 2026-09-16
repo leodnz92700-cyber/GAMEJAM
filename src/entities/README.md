@@ -3,9 +3,11 @@
 Contient les acteurs dynamiques du jeu.
 
 - **corpse.py** : Très important. Gère les cadavres laissés après une mort par
-  fiole ou piège. Les cadavres gardent l'inventaire, ont une présence physique
-  (pour les plaques de pression et pour arrêter les projectiles), et émettent de
-  la lumière.
+  fiole ou piège. Le sprite du cadavre est la DERNIÈRE image de l'animation de
+  mort du héros : c'est donc bien son corps qui reste sur place, ce qui rend
+  cohérent le fait qu'il arrête les fléchettes et maintienne une plaque de
+  pression. Il émet une lueur, et ne contient aucun objet : les affaires du
+  joueur tombent au sol autour de lui (`Level.drop_items`).
 - **items.py** : Les objets ramassables (fiole de poison pour se sacrifier,
   clés, torches).
 - **monster.py** : La créature qui traque le joueur, un fantôme invisible tant

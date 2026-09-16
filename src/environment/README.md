@@ -7,5 +7,6 @@ Contient les éléments statiques ou interactifs du labyrinthe.
 - **torch.py** : Les torches que le joueur peut planter pour éclairer durablement une zone.
 - **trap.py** : Les pièges. Un danger à éviter mais aussi une opportunité
   stratégique pour laisser son corps au bon endroit. Le piège à pointes est
-  invisible jusqu'à sa première victime, puis bat en continu : c'est ce qui le
-  rend franchissable, puisqu'il barre toute la largeur du couloir.
+  visible en permanence et bat en continu : on le voit, on lit son rythme, on
+  l'esquive. C'est ce battement qui le rend franchissable, puisqu'il barre toute
+  la largeur du couloir.

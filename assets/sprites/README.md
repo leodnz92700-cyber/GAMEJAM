@@ -19,13 +19,14 @@ modifiez `tools/import_pack_assets.py` et rien d'autre.
 |--------------------------------------|--------------------|------------------------------|
 | `player_idle_{down,side,up}.png`     | bande de 32x48     | `entities/player.py`         |
 | `player_run_{down,side,up}.png`      | bande de 32x48     | `entities/player.py`         |
+| `player_death.png`                   | bande de **48x48** | `entities/player.py`, `entities/corpse.py` |
 | `monster_idle.png`, `monster_move.png` | bande de 32x48   | `entities/monster.py`        |
+| `monster_attack.png`                 | bande de 32x48     | `ui/screamer.py` (jumpscare) |
 | `torch_strip.png`                    | bande de 32x32     | `environment/torch.py`       |
 | `trap_spike_strip.png`               | bande de 32x32     | `environment/trap.py`        |
 | `plate_strip.png`                    | bande de 32x32     | `environment/pressure_plate.py` |
 | `door_front_{closed,open}.png`       | 32x48              | `environment/door.py`        |
 | `door_side_{closed,open}.png`        | 64x64              | `environment/door.py`        |
-| `corpse.png`                         | 32x32              | `entities/corpse.py`         |
 | `item_{key,vial,torch}.png`          | 32x32              | `entities/items.py`          |
 | `exit.png`                           | 32x64 (escalier)   | `mechanics/level_manager.py` |
 | `trap_dart.png`                      | 32x32              | `environment/trap.py`        |
@@ -33,6 +34,21 @@ modifiez `tools/import_pack_assets.py` et rien d'autre.
 
 La marche vers la gauche n'existe pas dans le pack : le code retourne la bande
 "profil" (voir `entities/textures.py`).
+
+**Attention au format de `player_death.png` : 6 images de 48x48**, et non 32x48
+comme les autres bandes — un corps allongé est plus large qu'un personnage
+debout. Découpée en 32 de large, l'animation coupe chaque pose en deux et
+clignote. Le format est déclaré dans `PLAYER_DEATH_FRAME_SIZE`
+(`src/constants.py`). En cas de doute sur une bande, le pack fournit aussi les
+images une par une dans `map/dungeonsAndPixels/**/Frames/`.
+
+`player_death.png` sert deux fois : la bande entière est l'animation de chute, et
+sa dernière image est le sprite du cadavre. Si vous changez de personnage, gardez
+ce principe — sinon le corps qui reste au sol ne ressemblera plus à celui qui
+vient de tomber.
+
+`decor_bones1.png` et `decor_bones2.png` sont de simples décors pour le level
+design, ce ne sont plus les cadavres du joueur.
 
 ## Attention aux boîtes de collision
 

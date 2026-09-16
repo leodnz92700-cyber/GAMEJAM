@@ -11,8 +11,11 @@ Ne relancez plus le générateur une fois vos cartes dessinées, il écrase tout
 
 ## Structure d'un niveau
 
-- 4 zones (2x2). **Une zone = un écran** : la caméra est fixe et saute d'une
-  zone à l'autre quand le joueur franchit une frontière.
+- 4 zones (2x2), soit une carte de 80 x 44 tuiles. **Une zone = un écran** : la
+  caméra est fixe et saute d'une zone à l'autre quand le joueur franchit une
+  frontière. Ces dimensions viennent de `src/constants.py` (`ZONE_COLS`,
+  `ZONE_ROWS`, `ZONES_X`, `ZONES_Y`) — si vous les changez, régénérez ou
+  redimensionnez les cartes en conséquence.
 - Les frontières de zone doivent être des **murs pleins**, percés uniquement là
   où l'on veut un passage. Partout ailleurs, le joueur doit trouver un mur.
 - Les couloirs font **1 ou 2 tuiles** de large. Ceux d'une seule tuile sont les
@@ -43,7 +46,7 @@ tuiles avec des pièges, posez deux objets côte à côte.
 | `Doors`           | `door_key`        | `door_id`, `key_id`, `passage`                        |
 | `Doors`           | `door_plate`      | `door_id`, `plate_id`, `passage`                      |
 | `PressurePlates`  | `pressure_plate`  | `plate_id`, `door_id` (la porte commandée)             |
-| `Traps`           | `spike`           | cyclique une fois découvert (voir plus bas)            |
+| `Traps`           | `spike`           | visible et cyclique (voir plus bas)                   |
 | `Traps`           | `dart`            | `direction` (up/down/left/right), `interval`, `speed` |
 | `NPCs`            | `npc`             | `lines` (répliques séparées par `\|`), `wants_item`    |
 
@@ -53,7 +56,8 @@ descendant, sprite de face). **Une porte doit être posée sur un couloir d'une
 seule tuile**, sinon on peut la contourner.
 
 **Propriétés de la carte** : `zone_cols` et `zone_rows` (en tuiles) définissent
-le découpage en écrans — 40 x 20 par défaut, soit exactement un écran. Gardez
+le découpage en écrans — 40 x 22 par défaut, soit exactement un écran (il n'y a
+aucun bandeau d'interface, le jeu occupe toute la fenêtre). Gardez
 les dimensions de la carte multiples de ces valeurs.
 
 ## Règles de contenu à respecter
@@ -70,12 +74,12 @@ les dimensions de la carte multiples de ces valeurs.
 - **Beaucoup de torches** (au moins une dizaine, plutôt vingt) réparties le long
   du chemin principal : le joueur doit pouvoir, vie après vie, éclairer tout son
   trajet. Il n'en porte que deux à la fois.
-- **Les pièges à pointes barrent le couloir** : ils sont invisibles jusqu'à leur
-  première victime, puis battent en continu (pointes sorties ~1,1 s, rentrées
-  ~1,9 s, réglable dans `constants.py`). On peut donc les franchir en observant
-  leur rythme, et s'y jeter volontairement pour laisser un cadavre au bon
-  endroit. Ne les rendez jamais mortels en permanence : dans un couloir d'une
-  tuile, c'est un cul-de-sac définitif.
+- **Les pièges à pointes barrent le couloir** : ils sont visibles en permanence
+  et battent en continu (pointes sorties ~1,1 s, rentrées ~1,9 s, réglable dans
+  `constants.py`). Le joueur voit le danger et doit l'esquiver en lisant le
+  rythme, ou s'y jeter volontairement pour laisser un cadavre au bon endroit.
+  Ne les rendez jamais mortels en permanence : dans un couloir d'une tuile,
+  c'est un cul-de-sac définitif.
 - **La plaque de pression se pose juste avant sa porte**, dans le couloir qui y
   mène : le joueur doit voir la porte s'ouvrir quand il marche dessus, et se
   refermer quand il avance. C'est ce qui lui fait comprendre qu'il doit mourir

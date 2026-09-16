@@ -14,10 +14,15 @@ chaîne de caractères.
 Utilisation identique à `arcade.draw_text` :
 
     draw_text_cached("Etage 1", 20, 40, C.COLOR_TEXT, 14, anchor_x="center")
+
+Pour tout texte affiché PAR-DESSUS le jeu, préférez `draw_text_shadowed` : sans
+ombre portée, un texte clair devient illisible sur une zone éclairée.
 """
 from __future__ import annotations
 
 import arcade
+
+from src import constants as C
 
 _CACHE: dict[tuple, arcade.Text] = {}
 
@@ -40,6 +45,19 @@ def draw_text_cached(text, x: float, y: float, color=(255, 255, 255, 255),
         text_object.text = str(text)
     text_object.draw()
     return text_object
+
+
+def draw_text_shadowed(text, x: float, y: float, color=(255, 255, 255, 255),
+                       font_size: float = 12, **kwargs) -> arcade.Text:
+    """
+    Comme `draw_text_cached`, mais avec une ombre portée d'un pixel.
+
+    L'ATH est dessiné en transparence par-dessus le jeu : sans ombre, le texte
+    devient illisible dès qu'il passe au-dessus d'une zone éclairée par une
+    torche. C'est la version à utiliser pour tout ce qui est affiché en jeu.
+    """
+    draw_text_cached(text, x + 1, y - 1, C.COLOR_TEXT_SHADOW, font_size, **kwargs)
+    return draw_text_cached(text, x, y, color, font_size, **kwargs)
 
 
 def clear_cache() -> None:

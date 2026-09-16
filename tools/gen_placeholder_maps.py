@@ -33,15 +33,22 @@ ne le relancez plus.
 from __future__ import annotations
 
 import random
+import sys
 from collections import deque
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from src import constants as C       # noqa: E402  (après l'ajout au sys.path)
+
 MAPS = ROOT / "assets" / "maps"
 
-TILE = 32
-ZONE_COLS, ZONE_ROWS = 40, 20        # une zone = un écran
-ZONES_X, ZONES_Y = 2, 2              # 4 zones au total
+# Les dimensions viennent de `constants.py` : une zone doit occuper exactement
+# un écran, donc elles ne peuvent pas diverger entre le jeu et le générateur.
+TILE = C.TILE_SIZE
+ZONE_COLS, ZONE_ROWS = C.ZONE_COLS, C.ZONE_ROWS
+ZONES_X, ZONES_Y = C.ZONES_X, C.ZONES_Y
 MAP_COLS, MAP_ROWS = ZONE_COLS * ZONES_X, ZONE_ROWS * ZONES_Y
 
 SECTORS_X, SECTORS_Y = 2, 2          # 4 salles par zone

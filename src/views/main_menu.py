@@ -24,8 +24,8 @@ from src.ui.menu_components import Button, ButtonList, draw_hint, draw_title
 LORE = (
     "Tu te reveilles au pied d'une tour dont chaque etage est un labyrinthe sans "
     "lumiere. Tu ne sais pas comment tu es entre, seulement qu'il faut monter.\n\n"
-    "Tu trouveras des fioles. Bois-en une et tu meurs sur-le-champ : ton corps "
-    "reste la ou il tombe, il brille faiblement, et il garde ce que tu portais.\n\n"
+    "Tu trouveras une fiole. Bois-la et tu meurs sur-le-champ : ton corps reste "
+    "la ou il tombe, il brille faiblement, et tes affaires tombent autour de lui.\n\n"
     "Quelque chose rode dans la tour. Tu ne la verras pas venir : tu l'entendras. "
     "Si elle te prend, il ne restera rien de toi."
 )
@@ -171,21 +171,25 @@ class MainMenuView(arcade.View):
             )
             return
 
+        # La police n'est pas à chasse fixe : on pose chaque colonne à son
+        # abscisse plutôt que de remplir avec des espaces.
+        columns = (0, 95, 170, 240, 320, 400)
         header_y = C.WINDOW_HEIGHT - 226
-        draw_text_cached(
-            f"{'issue':<10}{'temps':<9}{'morts':<8}{'devore':<9}{'torches':<9}mode",
-            left + 22, header_y, C.COLOR_TEXT_DIM, 12,
-        )
+        for offset, title in zip(columns, ("issue", "temps", "morts", "devore",
+                                           "torches", "mode")):
+            draw_text_cached(title, left + 22 + offset, header_y, C.COLOR_TEXT_DIM, 12)
+
         for index, run in enumerate(self.leaderboard[:12]):
             minutes, seconds = divmod(int(run.get("elapsed", 0)), 60)
-            issue = "VICTOIRE" if run.get("victory") else "echec"
-            mode_label = C.GAME_MODES.get(run.get("mode", ""), {}).get("label", "?")
-            draw_text_cached(
-                f"{issue:<10}{minutes:02d}:{seconds:02d}    "
-                f"{run.get('deaths_total', 0):<8}{run.get('deaths_devoured', 0):<9}"
-                f"{run.get('torches_placed', 0):<9}{mode_label}",
-                left + 22,
-                header_y - 26 - index * 22,
-                C.COLOR_TEXT if run.get("victory") else C.COLOR_TEXT_DIM,
-                12,
+            color = C.COLOR_TEXT if run.get("victory") else C.COLOR_TEXT_DIM
+            values = (
+                "VICTOIRE" if run.get("victory") else "echec",
+                f"{minutes:02d}:{seconds:02d}",
+                str(run.get("deaths_total", 0)),
+                str(run.get("deaths_devoured", 0)),
+                str(run.get("torches_placed", 0)),
+                C.GAME_MODES.get(run.get("mode", ""), {}).get("label", "?"),
             )
+            row_y = header_y - 26 - index * 22
+            for offset, value in zip(columns, values):
+                draw_text_cached(value, left + 22 + offset, row_y, color, 12)

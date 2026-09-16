@@ -55,7 +55,7 @@ class RunStats:
             ("  dont devore par la bete", str(self.deaths_devoured)),
             ("Torches plantees", str(self.torches_placed)),
             ("Objets ramasses", str(self.items_picked)),
-            ("Objets repris sur un cadavre", str(self.corpses_looted)),
+            ("Objets repris pres d'un ancien corps", str(self.corpses_looted)),
             ("Portes ouvertes", str(self.doors_opened)),
             ("Zones explorees", str(len(self.zones_visited))),
             ("Etages franchis", str(self.floors_cleared)),

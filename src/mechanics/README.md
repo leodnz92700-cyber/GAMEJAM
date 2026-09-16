@@ -6,11 +6,13 @@ Contient les systèmes et moteurs qui gèrent les règles du jeu.
   décoratif ici : il REMPLACE le compte à rebours, c'est lui qui prévient le
   joueur de l'approche de la créature.
 - **death_manager.py** : gère la mécanique principale du jeu : la mort
-  volontaire (laisse un cadavre lumineux avec l'inventaire) VS la mort par la
-  bête (cadavre dévoré, perte des objets).
+  volontaire (le corps reste, les affaires tombent au sol autour de lui) VS la
+  mort par la bête (rien ne reste, tout est perdu). La mise en scène de chacune
+  — chute du héros, ou jumpscare — est déclenchée par `views/game_view.py`.
 - **interaction_manager.py** : gère l'interaction entre le joueur, les objets et
-  l'environnement (ramasser, fouiller un cadavre, ouvrir une porte, planter une
-  torche, boire la fiole).
+  l'environnement (ramasser un objet au sol, ouvrir une porte, planter une
+  torche, boire la fiole). Les cadavres ne se fouillent pas : les affaires d'une
+  vie précédente sont posées par terre autour du corps.
 - **inventory_system.py** : gère l'inventaire limité du joueur et la
   récupération d'objets sur les anciennes dépouilles.
 - **level_manager.py** : construit un étage à partir d'une carte Tiled, simule

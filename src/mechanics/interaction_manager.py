@@ -3,19 +3,45 @@ Fichier : interaction_manager.py
 Auteur : base technique (game jam)
 
 Description :
-Tout ce que le joueur déclenche volontairement : ramasser, fouiller un cadavre,
+Tout ce que le joueur déclenche volontairement : ramasser un objet au sol,
 ouvrir une porte, parler à un PNJ, planter une torche, boire la fiole.
 
 Une seule touche sert à interagir. L'ordre de priorité est important pour que le
-jeu reste lisible dans le noir : on fouille un cadavre avant de ramasser un
-objet au sol, et on ouvre une porte en dernier.
+jeu reste lisible dans le noir : on ramasse d'abord ce qui est au sol, on ouvre
+une porte ensuite, on parle en dernier.
+
+`find_target` répond à la question « que puis-je faire ici ? » et sert à la fois
+à l'affichage de l'invite et à l'exécution de l'action, si bien que l'invite ne
+peut jamais mentir.
+
+Il n'y a PAS d'interaction avec les cadavres : les affaires d'une vie précédente
+sont posées par terre autour du corps, et se ramassent comme le reste.
 """
 from __future__ import annotations
+
+from dataclasses import dataclass
 
 import arcade
 
 from src import constants as C
 from src.entities.items import Item
+
+
+@dataclass
+class InteractionTarget:
+    """
+    Ce que le joueur peut faire, ici et maintenant.
+
+    Cet objet est la source de vérité UNIQUE partagée par l'ATH et par l'action :
+    l'invite « E » ne s'affiche que si `find_target` renvoie quelque chose, et
+    appuyer sur E exécute exactement ce que l'invite annonçait. Impossible que
+    l'affichage et le comportement divergent.
+    """
+
+    kind: str              # "item", "door" ou "npc"
+    sprite: object
+    prompt: str            # ce que lit le joueur : "Ramasser la cle"
+    actionable: bool = True    # False = trop plein, porte verrouillee, etc.
 
 
 def _nearest(sprites, x: float, y: float, radius: float):
@@ -60,61 +86,94 @@ class InteractionManager:
     # ------------------------------------------------------------------ #
     # Touche "interagir"
     # ------------------------------------------------------------------ #
-    def interact(self, player, level) -> str:
-        """Exécute l'interaction la plus pertinente et renvoie un message pour le HUD."""
+    def find_target(self, player, level) -> InteractionTarget | None:
+        """
+        Ce que le joueur peut faire à sa position actuelle, ou None.
+
+        Appelé à chaque frame par l'ATH : c'est ce qui permet de n'afficher
+        l'invite « E » qu'au moment où une interaction est réellement à portée,
+        au lieu d'un rappel de touches permanent.
+        """
         x, y = player.position
         radius = C.INTERACTION_RADIUS
 
-        # 1. Fouiller une dépouille : c'est ainsi qu'on récupère ce qu'on a
-        #    laissé lors d'une vie précédente.
-        corpse = _nearest(
-            [corpse for corpse in level.corpse_list if corpse.has_items], x, y, radius
-        )
-        if corpse is not None:
-            if player.inventory.is_full:
-                return "Inventaire plein : impossible de fouiller."
-            item = corpse.take_item()
-            player.pick_up(item)
-            self.score.stats.corpses_looted += 1
-            self.audio.play("pickup")
-            return f"Tu reprends {item.label.lower()} sur ton ancien corps."
-
-        # 2. Ramasser un objet au sol.
+        # 1. Ramasser un objet au sol. Les affaires tombées d'un ancien corps
+        #    sont des objets au sol comme les autres : rien à fouiller.
         item_sprite = _nearest(level.item_list, x, y, radius)
         if item_sprite is not None:
-            if player.inventory.is_full:
-                return "Inventaire plein : laisse quelque chose derriere toi."
-            player.pick_up(item_sprite.item)
-            item_sprite.remove_from_sprite_lists()
-            self.score.stats.items_picked += 1
-            self.audio.play("pickup")
-            return f"{item_sprite.item.label} ramassee."
+            full = player.inventory.is_full
+            return InteractionTarget(
+                kind="item",
+                sprite=item_sprite,
+                prompt=(
+                    "Inventaire plein"
+                    if full
+                    else f"Ramasser {item_sprite.item.phrase}"
+                ),
+                actionable=not full,
+            )
 
-        # 3. Ouvrir une porte.
+        # 2. Ouvrir une porte.
         door = _nearest_wide(
             [door for door in level.door_list if not door.is_open], x, y, radius
         )
         if door is not None:
-            return self._try_open_door(player, level, door)
+            if not door.needs_key:
+                return InteractionTarget(
+                    kind="door",
+                    sprite=door,
+                    prompt="Commandee par une plaque de pression",
+                    actionable=False,
+                )
+            has_key = player.has_key(door.key_id) is not None
+            return InteractionTarget(
+                kind="door",
+                sprite=door,
+                prompt="Ouvrir la porte" if has_key else "Verrouillee : il te faut la cle",
+                actionable=has_key,
+            )
 
-        # 4. Parler à un PNJ.
+        # 3. Parler à un PNJ.
         npc = _nearest(level.npc_list, x, y, radius + 12)
         if npc is not None:
-            return npc.next_line()
+            return InteractionTarget(kind="npc", sprite=npc, prompt="Parler")
 
-        return ""
+        return None
 
-    def _try_open_door(self, player, level, door) -> str:
-        if door.needs_key:
-            key = player.has_key(door.key_id)
-            if key is None:
-                return "Verrouillee. Il te faut la cle."
-            player.inventory.remove(key)
-            level.open_door(door)
-            self.score.stats.doors_opened += 1
-            self.audio.play("door_open")
-            return "La serrure cede."
-        return "Cette porte est commandee par une plaque de pression."
+    def interact(self, player, level) -> str:
+        """Exécute l'interaction proposée par `find_target` et renvoie un message."""
+        target = self.find_target(player, level)
+        if target is None:
+            return ""
+        if not target.actionable:
+            return target.prompt
+
+        if target.kind == "item":
+            return self._pick_up(player, target.sprite)
+        if target.kind == "door":
+            return self._open_door(player, level, target.sprite)
+        return target.sprite.next_line()
+
+    def _pick_up(self, player, item_sprite) -> str:
+        item = item_sprite.item
+        player.pick_up(item)
+        item_sprite.remove_from_sprite_lists()
+        self.audio.play("pickup")
+        if item.properties.get("dropped"):
+            self.score.stats.corpses_looted += 1
+            return f"Tu reprends {item.phrase} pres de ton ancien corps."
+        self.score.stats.items_picked += 1
+        return f"Tu ramasses {item.phrase}."
+
+    def _open_door(self, player, level, door) -> str:
+        key = player.has_key(door.key_id)
+        if key is None:                      # garde-fou : `find_target` l'a déjà filtré
+            return "Verrouillee. Il te faut la cle."
+        player.inventory.remove(key)
+        level.open_door(door)
+        self.score.stats.doors_opened += 1
+        self.audio.play("door_open")
+        return "La serrure cede."
 
     # ------------------------------------------------------------------ #
     # Torches

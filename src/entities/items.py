@@ -37,7 +37,13 @@ class Item:
 
     @property
     def label(self) -> str:
+        """Nom court, pour une case d'inventaire ou un titre."""
         return C.ITEM_LABELS.get(self.type, self.type)
+
+    @property
+    def phrase(self) -> str:
+        """Nom avec son article, pour l'insérer dans une phrase."""
+        return C.ITEM_PHRASES.get(self.type, self.label.lower())
 
     @property
     def key_id(self) -> str | None:

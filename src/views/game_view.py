@@ -36,6 +36,7 @@ from src.mechanics.monster_manager import MonsterManager
 from src.mechanics.score_manager import ScoreManager
 from src.ui.dialog_box import DialogBox
 from src.ui.hud import HUD
+from src.ui.screamer import Screamer
 
 # Touches de déplacement (clavier AZERTY + flèches).
 KEYS_UP = (arcade.key.Z, arcade.key.UP)
@@ -43,7 +44,10 @@ KEYS_DOWN = (arcade.key.S, arcade.key.DOWN)
 KEYS_LEFT = (arcade.key.Q, arcade.key.LEFT)
 KEYS_RIGHT = (arcade.key.D, arcade.key.RIGHT)
 
-DEATH_BLACKOUT = 0.7        # secondes d'écran noir entre deux vies
+# Court écran noir avant la vie suivante. Il est bref car la mise en scène de la
+# mort la précède : chute du personnage pour une mort choisie, jumpscare pour une
+# mort subie.
+DEATH_BLACKOUT = 0.45
 
 
 class GameView(arcade.View):
@@ -63,15 +67,17 @@ class GameView(arcade.View):
         self.lighting = LightingEngine(self.window)
 
         self.hud = HUD()
+        self.screamer = Screamer()
         # Placé en haut de l'écran : au centre, il masquerait le joueur et la
         # petite zone éclairée autour de lui.
         self.dialog = DialogBox(
-            C.WINDOW_WIDTH / 2, C.WINDOW_HEIGHT - 120, 760, 120, font_size=15
+            C.WINDOW_WIDTH / 2, C.WINDOW_HEIGHT - 110, 700, 64, font_size=15
         )
 
         # Caméra du monde : cadrée sur la zone courante, jamais sur le joueur.
+        # Une zone occupe exactement l'écran, il n'y a donc pas de bandeau.
         self.camera = arcade.Camera2D(
-            viewport=arcade.LBWH(0, C.HUD_HEIGHT, C.VIEWPORT_WIDTH, C.VIEWPORT_HEIGHT)
+            viewport=arcade.LBWH(0, 0, C.VIEWPORT_WIDTH, C.VIEWPORT_HEIGHT)
         )
         self.camera_gui = arcade.Camera2D()
 
@@ -80,6 +86,13 @@ class GameView(arcade.View):
         self.physics_engine = None
 
         self.keys_down: set[int] = set()
+        # Cause de la mort choisie en cours : le personnage est en train de
+        # s'effondrer à l'écran, ses conséquences ne s'appliqueront qu'à la fin
+        # de l'animation.
+        self.dying_cause: str | None = None
+        # Recalculée à chaque frame : ce que le joueur peut faire là où il est.
+        # L'ATH s'en sert pour n'afficher l'invite « E » qu'à bon escient.
+        self.interaction_target = None
         self.death_timer = 0.0
         self.zone_fade = 0.0
         self.finished = False      # empêche de déclencher deux fins de partie
@@ -100,10 +113,12 @@ class GameView(arcade.View):
         self._snap_camera()
 
         self.audio.start_ambience()
+        # Les touches ne sont plus rappelées ici : l'ATH les affiche en
+        # permanence en bas à droite, et l'invite « E » apparaît toute seule
+        # quand il y a quelque chose à faire.
         self.dialog.show(
-            "Tu te reveilles dans le noir. Quelque part au-dessus, il y a une sortie.\n"
-            "E : interagir     F : planter une torche     R : boire la fiole",
-            duration=5.0,
+            "Tu te reveilles dans le noir. Quelque part au-dessus, il y a une sortie.",
+            duration=4.5,
         )
 
     def _rebuild_physics(self) -> None:
@@ -138,7 +153,21 @@ class GameView(arcade.View):
         if self.zone_fade > 0:
             self.zone_fade = max(0.0, self.zone_fade - delta_time)
 
-        # Écran noir entre deux vies : le joueur ne contrôle rien.
+        # Mise en scène de la mort : dans ces trois états, le joueur ne contrôle
+        # plus rien et le monde ne peut plus le tuer une seconde fois.
+        if self.screamer.active:
+            self.interaction_target = None
+            self.screamer.update(delta_time)
+            if not self.screamer.active:
+                self._respawn()
+            return
+
+        if self.dying_cause is not None:
+            self.interaction_target = None
+            if self.player.death_animation_finished:
+                self._finish_chosen_death()
+            return
+
         if self.death_timer > 0:
             self.death_timer -= delta_time
             if self.death_timer <= 0:
@@ -155,6 +184,7 @@ class GameView(arcade.View):
 
         self.level.update_plates(self.player, self.audio)
         self.level.update_darts(delta_time)
+        self.interaction_target = self.interaction.find_target(self.player, self.level)
 
         if self._check_hazards():
             return
@@ -186,9 +216,8 @@ class GameView(arcade.View):
             if not isinstance(trap, SpikeTrap) or not trap.is_lethal:
                 continue
             if arcade.check_for_collision(self.player, trap):
-                # Le piège se révèle : il ne surprendra plus personne. Il se met
-                # à battre visiblement, et le cadavre laissé dessus sert de balise.
-                self.level.reveal_trap_group(trap)
+                # Les pointes sont sorties au mauvais moment : le joueur voyait
+                # le piège, c'est son timing qui l'a trahi.
                 self._die(C.DEATH_TRAP)
                 return True
 
@@ -208,15 +237,45 @@ class GameView(arcade.View):
     # Mort, réapparition, progression
     # ------------------------------------------------------------------ #
     def _die(self, cause: str) -> None:
+        """
+        Déclenche la mise en scène de la mort.
+
+        Deux traitements opposés, pour que le joueur SENTE la différence entre
+        choisir sa mort et la subir :
+
+          - mort choisie (fiole) ou par piège : le héros s'effondre à l'écran, et
+            ce n'est qu'une fois tombé que le corps devient le cadavre laissé sur
+            place. Les conséquences ne sont appliquées qu'à ce moment-là ;
+          - mort par la créature : sa gueule remplit l'écran. Les conséquences
+            sont immédiates, il n'y a de toute façon rien à laisser derrière soi.
+        """
+        if self.dying_cause is not None or self.screamer.active or self.death_timer > 0:
+            return          # une mort est déjà en cours
+        self.player.stop()
+
+        if cause == C.DEATH_DEVOURED:
+            result = self.death_manager.kill(self.player, self.level, cause)
+            self.hud.show_message(result.message, duration=3.4)
+            self.screamer.start()
+            self._check_mode_limits()
+            return
+
+        self.player.start_dying()
+        self.dying_cause = cause
+
+    def _finish_chosen_death(self) -> None:
+        """Le héros a fini de s'effondrer : son corps reste, ses affaires tombent."""
+        cause, self.dying_cause = self.dying_cause, None
         result = self.death_manager.kill(self.player, self.level, cause)
         self.hud.show_message(result.message, duration=3.4)
-        self.player.stop()
         self.death_timer = DEATH_BLACKOUT
         self._check_mode_limits()
 
     def _respawn(self) -> None:
         if self.finished:
             return
+        self.screamer.stop()
+        self.dying_cause = None
         # `respawn` remet aussi en place les objets uniques disparus.
         restored = self.death_manager.respawn(self.player, self.level)
         if C.ITEM_KEY in restored:
@@ -271,7 +330,12 @@ class GameView(arcade.View):
         if key == arcade.key.ESCAPE:
             self._back_to_menu()
             return
-        if self.death_timer > 0 or self.finished:
+        if (
+            self.death_timer > 0
+            or self.dying_cause is not None
+            or self.screamer.active
+            or self.finished
+        ):
             return
 
         if key == arcade.key.E:
@@ -307,8 +371,13 @@ class GameView(arcade.View):
             self._collect_lights()
             self.lighting.draw()
             self._draw_fades()
+            self.screamer.draw()
             self.hud.draw(
-                self.player, self.level, self.score, self.monster_manager.whisper
+                self.player,
+                self.level,
+                self.score,
+                self.monster_manager.whisper,
+                self.interaction_target,
             )
             self.dialog.draw()
 
@@ -341,7 +410,9 @@ class GameView(arcade.View):
         Déclare les sources de lumière de la frame, en coordonnées écran.
 
         C'est ici que se joue la lisibilité du niveau : le joueur voit son petit
-        halo, ses torches plantées, et la lueur de ses anciens corps.
+        halo, ses torches plantées et la lueur de ses anciens corps — rien
+        d'autre. Les objets au sol n'émettent JAMAIS de lumière : on ne les
+        trouve qu'en éclairant l'endroit où ils sont tombés.
         """
         level = self.level
         self.lighting.begin_frame()
@@ -364,18 +435,14 @@ class GameView(arcade.View):
 
         for corpse in level.corpse_list:
             screen_x, screen_y = level.world_to_screen(corpse.center_x, corpse.center_y)
-            # Un cadavre qui porte encore des objets brille plus fort et plus
-            # chaud : dans le noir, c'est le seul moyen de retrouver ce qu'on a
-            # laissé derrière soi.
-            carrying = corpse.has_items
             self.lighting.add_light(
                 screen_x,
                 screen_y,
-                C.CORPSE_LIGHT_RADIUS * corpse.light_intensity()
-                * (C.CORPSE_LOOT_LIGHT_FACTOR if carrying else 1.0),
-                C.COLOR_CORPSE_LOOT_GLOW if carrying else C.COLOR_CORPSE_GLOW,
-                glow=0.30 if carrying else 0.22,
+                C.CORPSE_LIGHT_RADIUS * corpse.light_intensity(),
+                C.COLOR_CORPSE_GLOW,
+                glow=0.22,
             )
+
 
         for exit_sprite in level.exit_list:
             screen_x, screen_y = level.world_to_screen(
@@ -397,5 +464,5 @@ class GameView(arcade.View):
         if alpha <= 0:
             return
         arcade.draw_lbwh_rectangle_filled(
-            0, C.HUD_HEIGHT, C.WINDOW_WIDTH, C.VIEWPORT_HEIGHT, (0, 0, 0, alpha)
+            0, 0, C.WINDOW_WIDTH, C.WINDOW_HEIGHT, (0, 0, 0, alpha)
         )

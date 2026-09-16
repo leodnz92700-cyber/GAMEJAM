@@ -11,10 +11,9 @@ qu'elle est réellement praticable : c'est lui qui détecte un couloir d'une seu
 tuile trop étroit pour la boîte de collision du joueur, une porte mal posée ou un
 passage de zone bouché.
 
-Les pièges à pointes sont RÉVÉLÉS et ACTIFS pendant le test, comme pour un joueur
-qui s'est déjà fait avoir une fois : le script attend que les pointes rentrent
-avant de franchir un piège. Si un piège ne redevient jamais franchissable, le
-joueur serait définitivement bloqué et le test échoue.
+Les pièges à pointes battent pendant le test : le script attend que les pointes
+rentrent avant d'en franchir un. Si un piège ne redevient jamais franchissable,
+le joueur serait définitivement bloqué et le test échoue.
 
     python tools/walk_test.py                 # tous les niveaux
     python tools/walk_test.py level_01.tmx    # un seul
@@ -72,16 +71,15 @@ def check_traps_are_passable(level) -> list[str]:
     """
     Vérifie que chaque piège à pointes redevient franchissable.
 
-    C'est la garantie qui manquait à la première version : un piège barre toute
-    la largeur d'un couloir d'une tuile, donc s'il restait mortel en permanence
-    le niveau devenait infranchissable. On simule un cycle complet et on exige
-    une fenêtre sûre assez longue pour traverser une tuile sans se presser.
+    Un piège barre toute la largeur d'un couloir d'une tuile : s'il restait
+    mortel en permanence, le niveau deviendrait infranchissable. On simule un
+    cycle complet et on exige une fenêtre sûre assez longue pour traverser une
+    tuile sans se presser.
     """
     problems: list[str] = []
     crossing_time = C.TILE_SIZE / C.PLAYER_SPEED       # ~0.17 s pour franchir une tuile
     required = crossing_time * 3.5
     for trap in level.spike_traps():
-        trap.reveal()
         safe = 0.0
         longest = 0.0
         steps = int(C.SPIKE_CYCLE_DURATION / STEP) + 2
@@ -134,9 +132,6 @@ def walk(view: GameView) -> tuple[bool, str]:
     level = view.level
     for door in list(level.door_list):
         level.open_door(door)
-    # On se met dans la peau d'un joueur qui connait deja les pieges.
-    for trap in level.spike_traps():
-        trap.reveal()
 
     # On vise `exit_rect` et non le sprite : l'escalier est dessine deux tuiles
     # plus haut que la tuile qui declenche reellement la sortie.

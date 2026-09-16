@@ -9,8 +9,8 @@ tout est dessiné normalement, puis le moteur applique deux passes par-dessus.
   1. Une passe de LUEUR : un dégradé radial dessiné en fusion additive pour
      chaque source, ce qui donne sa couleur chaude à une torche et sa teinte
      froide à un cadavre.
-  2. Une passe d'OBSCURITÉ : un unique quad noir couvrant la zone de jeu, avec
-     un shader qui y perce un trou dégradé autour de chaque source.
+  2. Une passe d'OBSCURITÉ : un unique quad noir couvrant l'écran, avec un
+     shader qui y perce un trou dégradé autour de chaque source.
 
 Le shader reçoit la liste des lumières visibles, donc faire vaciller une torche
 revient simplement à faire varier son rayon d'une frame à l'autre.
@@ -22,8 +22,8 @@ Sources de lumière du jeu :
   - la sortie de l'étage.
 
 IMPORTANT : `draw()` doit être appelé alors que la caméra ÉCRAN est active
-(après le rendu du monde, avant le HUD), car les lumières sont fournies en
-coordonnées écran.
+(après le rendu du monde, avant l'ATH), car les lumières sont fournies en
+coordonnées écran. L'ATH est dessiné APRÈS, donc il n'est jamais assombri.
 """
 from __future__ import annotations
 
@@ -96,7 +96,7 @@ class LightingEngine:
             fragment_shader=FRAGMENT_SHADER,
         )
         self.darkness = C.DARKNESS_ALPHA / 255.0
-        # Le voile ne couvre que la zone de jeu : le bandeau du HUD reste lisible.
+        # Le voile couvre tout l'écran : l'ATH est dessiné par-dessus, après.
         self._quad = self._build_viewport_quad()
         self._lights: list[_Light] = []
 
@@ -108,16 +108,12 @@ class LightingEngine:
 
     def _build_viewport_quad(self):
         """
-        Quad couvrant le viewport de jeu, exprimé en coordonnées normalisées.
+        Quad couvrant tout l'écran, exprimé en coordonnées normalisées.
 
         Passer par le repère normalisé (et non par `ctx.viewport`) évite tout
         problème d'écran retina, où le framebuffer fait le double de pixels.
         """
-        ndc_width = 2.0 * C.VIEWPORT_WIDTH / C.WINDOW_WIDTH
-        ndc_height = 2.0 * C.VIEWPORT_HEIGHT / C.WINDOW_HEIGHT
-        center_y = C.HUD_HEIGHT + C.VIEWPORT_HEIGHT / 2.0
-        ndc_center_y = 2.0 * center_y / C.WINDOW_HEIGHT - 1.0
-        return geometry.quad_2d(size=(ndc_width, ndc_height), pos=(0.0, ndc_center_y))
+        return geometry.quad_2d_fs()
 
     # ------------------------------------------------------------------ #
     # Collecte des lumières (coordonnées ÉCRAN, pas monde)
@@ -139,7 +135,7 @@ class LightingEngine:
         if (
             screen_x < -radius
             or screen_x > C.WINDOW_WIDTH + radius
-            or screen_y < C.HUD_HEIGHT - radius
+            or screen_y < -radius
             or screen_y > C.WINDOW_HEIGHT + radius
         ):
             return
@@ -190,6 +186,6 @@ class LightingEngine:
         self._quad.render(self.program)
 
     def draw(self) -> None:
-        """À appeler APRÈS le monde et AVANT le HUD, caméra écran active."""
+        """À appeler APRÈS le monde et AVANT l'ATH, caméra écran active."""
         self._draw_glows()
         self._draw_darkness()

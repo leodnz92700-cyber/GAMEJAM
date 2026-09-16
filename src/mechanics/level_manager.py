@@ -141,7 +141,7 @@ class Level:
     def world_to_screen(self, x: float, y: float) -> tuple[float, float]:
         """Convertit une position monde en position écran pour la zone courante."""
         origin_x, origin_y = self.zone_origin()
-        return x - origin_x, y - origin_y + C.HUD_HEIGHT
+        return x - origin_x, y - origin_y
 
     # ------------------------------------------------------------------ #
     # Simulation de l'environnement
@@ -231,8 +231,6 @@ class Level:
 
         if any(matches(sprite.item) for sprite in self.item_list):
             return True
-        if any(matches(item) for corpse in self.corpse_list for item in corpse.items):
-            return True
         if player is not None and any(matches(item) for item in player.inventory):
             return True
         return False
@@ -249,8 +247,8 @@ class Level:
             trouvée. Sans cela, se faire prendre en la portant détruirait le seul
             exemplaire et rendrait l'étage définitivement infinissable.
 
-        Un objet posé sur un cadavre n'est PAS considéré comme perdu : il est
-        toujours dans le niveau, et le joueur doit aller le rechercher lui-même.
+        Un objet tombé au sol n'est PAS considéré comme perdu : il est toujours
+        dans le niveau, et le joueur doit aller le rechercher lui-même.
 
         Renvoie la liste des types d'objets remis en place.
         """
@@ -262,10 +260,63 @@ class Level:
             restored.append(item_type)
         return restored
 
-    def add_corpse(self, x: float, y: float, items, cause: str) -> Corpse:
-        corpse = Corpse(x, y, items, cause)
+    def add_corpse(self, x: float, y: float, cause: str) -> Corpse:
+        """Laisse le corps du joueur sur place. Il ne contient rien : les objets
+        transportés tombent au sol autour de lui (voir `drop_items`)."""
+        corpse = Corpse(x, y, cause)
         self.corpse_list.append(corpse)
         return corpse
+
+    def drop_items(self, x: float, y: float, items) -> list[ItemSprite]:
+        """
+        Éparpille les objets transportés sur le sol autour du point de mort.
+
+        Le joueur n'a rien à fouiller : ses affaires sont posées par terre et se
+        ramassent comme n'importe quel objet. Elles sont marquées `dropped`, ce
+        qui leur donne une petite lueur dorée — sans quoi on ne les retrouverait
+        jamais dans le noir — et alimente les statistiques de fin de partie.
+        """
+        dropped: list[ItemSprite] = []
+        for item in items:
+            position = self._free_spot_near(x, y, dropped)
+            item.properties["dropped"] = True
+            sprite = ItemSprite(item, *position)
+            self.item_list.append(sprite)
+            dropped.append(sprite)
+        return dropped
+
+    def _free_spot_near(self, x: float, y: float, already: list) -> tuple[float, float]:
+        """
+        Cherche une case libre autour du point de mort.
+
+        On s'écarte en cercles concentriques pour ne jamais poser un objet dans
+        un mur ni deux objets au même endroit. En dernier recours, tout tombe sur
+        le corps lui-même : mieux vaut un tas qu'un objet perdu dans la pierre.
+        """
+        offsets: list[tuple[float, float]] = []
+        for distance in (0.85, 1.4, 2.0):
+            step = C.TILE_SIZE * distance
+            offsets.extend(
+                [
+                    (step, 0.0), (-step, 0.0), (0.0, step), (0.0, -step),
+                    (step * 0.7, step * 0.7), (-step * 0.7, step * 0.7),
+                    (step * 0.7, -step * 0.7), (-step * 0.7, -step * 0.7),
+                ]
+            )
+        # Le point de mort lui-même n'est tenté qu'en dernier : les affaires
+        # doivent tomber AUTOUR du corps, pas dessous, sinon on ne les voit pas.
+        offsets.append((0.0, 0.0))
+        for offset_x, offset_y in offsets:
+            spot = (x + offset_x, y + offset_y)
+            if not self.map.is_walkable_point(*spot):
+                continue
+            if any(
+                arcade.math.get_distance(*spot, *sprite.position) < C.TILE_SIZE * 0.6
+                for sprite in already
+            ):
+                continue
+            return spot
+        return (x, y)
 
     def add_torch(self, x: float, y: float) -> Torch:
         torch = Torch(x, y)
@@ -274,20 +325,6 @@ class Level:
 
     def spike_traps(self) -> list[SpikeTrap]:
         return [trap for trap in self.trap_list if isinstance(trap, SpikeTrap)]
-
-    def reveal_trap_group(self, trap: SpikeTrap) -> None:
-        """
-        Révèle le piège touché et ses voisins immédiats.
-
-        Un couloir de deux tuiles est barré par deux pièges distincts : si on
-        n'en révélait qu'un, l'autre resterait invisible et le joueur croirait
-        pouvoir passer à côté.
-        """
-        for other in self.spike_traps():
-            if arcade.math.get_distance(
-                other.center_x, other.center_y, trap.center_x, trap.center_y
-            ) <= C.TILE_SIZE * 1.5:
-                other.reveal()
 
     def reached_exit(self, player) -> bool:
         return bool(arcade.check_for_collision_with_list(player, self.exit_list))

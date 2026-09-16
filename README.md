@@ -305,25 +305,110 @@ python main.py
 ```
 
 
+## Structure du projet
+
+Le nom entre crochets indique qui est responsable du fichier. Chaque paquet de
+`src/` contient aussi un `__init__.py` vide et un `README.md` qui détaille son
+rôle.
+
+```
 GAMEJAM/
-├── .gitignore
-├── .python-version
-├── requirements.txt
-├── README.md
-├── main.py                  <-- Point d'entrée pour lancer le jeu
-├── data/                    <-- Fichiers de sauvegarde
-│   └── leaderboard.json     <-- Tableau des scores local
-├── assets/                  <-- Toutes les ressources externes
-│   ├── sprites/             <-- Personnages, murs, torches, cadavres
-│   ├── audio/               <-- Musique flippante, bruitages
-│   ├── fonts/               <-- Polices d'écriture pour l'UI
-│   └── maps/                <-- Fichiers Tiled (.tmx) ou JSON pour les niveaux
-└── src/                     <-- Code source du jeu
-    ├── constants.py         <-- Tailles d'écran, timer de mort, couleurs
-    ├── views/               <-- Les différents écrans (Arcade Views)
-    ├── entities/            <-- Les objets interactifs
-    ├── mechanics/           <-- Moteurs logiques
-    └── ui/                  <-- Éléments d'interface
+│
+├── README.md                        # [Théo] Documentation, pitch, structure
+├── requirements.txt                 # [Théo] Dépendances (arcade 3.3.3)
+├── .python-version                  # [Théo] Python 3.12.9 via pyenv
+├── .gitignore                       # [Théo] .venv, caches, scores locaux
+├── main.py                          # [Melvin] Point d'entrée + options de debug (--map, --skip-menu)
+│
+├── map/                             # NOUVEAU
+│   └── dungeonsAndPixels/           # [Tom] Pack pixel art source 32x32. JAMAIS lu par le jeu.
+│
+├── tools/                           # NOUVEAU — scripts hors-jeu, jamais importés par le jeu
+│   ├── import_pack_assets.py        # [Tom] Importe le pack vers assets/. Seul fichier à changer pour un autre pack.
+│   ├── gen_placeholder_maps.py      # [Tom] Génère les .tmx placeholder. ÉCRASE les cartes existantes !
+│   ├── check_levels.py              # [Tom] Valide une carte : sortie atteignable, clé pas enfermée, fiole unique, torches
+│   ├── walk_test.py                 # [Tom] Traverse la carte avec le vrai moteur de collisions (couloirs étroits, pièges)
+│   ├── gen_placeholder_assets.py    # [Léo] Génère les sons de synthèse et le dégradé de lumière
+│   └── smoke_test.py                # [Melvin] Rejoue une partie complète et capture des écrans
+│
+├── assets/
+│   ├── audio/                       # [Léo] Sons placeholder générés, à remplacer par les vrais (mêmes noms)
+│   │   ├── ambience_drone.wav       # [Léo] Nappe de fond, son volume monte avec la tension
+│   │   ├── growl_far.wav            # [Léo] Palier 1 : grondement lointain
+│   │   ├── scratch.wav              # [Léo] Palier 2 : griffes sur la pierre
+│   │   ├── steps_close.wav          # [Léo] Palier 3 : des pas courent
+│   │   ├── heartbeat.wav            # [Léo] Palier 4 : la créature est lâchée
+│   │   ├── devoured.wav             # [Léo] Mort subie
+│   │   ├── death_vial.wav           # [Léo] Mort choisie
+│   │   └── pickup, door_open, torch_place, plate_click, trap_trigger  # [Léo] Interactions
+│   ├── fonts/                       # [Erwan] Polices (vide : police système pour l'instant)
+│   ├── maps/                        # [Tom]
+│   │   ├── level_01.tmx             # [Tom] Étage 1
+│   │   ├── level_02.tmx             # [Tom] Étage 2
+│   │   ├── level_test.tmx           # [Tom] Carte de test, pour itérer vite
+│   │   ├── Tileset_Dungeon.png/.tsx # [Tom] Tileset du pack, importé
+│   │   └── README.md                # [Tom] Convention Tiled : calques, classes, propriétés, règles de contenu
+│   └── sprites/                     # [Tom] Importés du pack, à plat (voir assets/sprites/README.md)
+│       ├── player_idle_*.png        # [Tom] Héros au repos, 3 directions
+│       ├── player_run_*.png         # [Tom] Héros en course, 3 directions
+│       ├── monster_idle/move.png    # [Tom] Le fantôme
+│       ├── corpse.png               # [Tom] Ossements
+│       ├── item_key/vial/torch.png  # [Tom] Objets ramassables
+│       ├── torch_strip.png          # [Tom] Torche plantée, animée
+│       ├── trap_spike_strip.png     # [Tom] Pointes, 7 images (cycle)
+│       ├── plate_strip.png          # [Tom] Plaque relevée / enfoncée
+│       ├── door_front/side_*.png    # [Tom] Portes de face et de profil
+│       ├── exit.png                 # [Tom] Escalier vers l'étage suivant
+│       ├── trap_dart.png, dart.png  # [Tom] Piège à fléchettes
+│       └── light_gradient.png       # [Léo] Dégradé radial du moteur de lumière
+│
+├── data/
+│   └── leaderboard.json             # [Léo] Scores locaux. Créé au 1er lancement, NON versionné.
+│
+└── src/
+    ├── constants.py                 # [NA] TOUT l'équilibrage : vitesses, timers, lumière, modes de jeu
+    │
+    ├── entities/
+    │   ├── corpse.py                # [Inès] Cadavres : le corps du héros, lueur, présence physique
+    │   ├── items.py                 # [Théo] Objets ramassables (donnée + sprite au sol)
+    │   ├── monster.py               # [Inès] Le fantôme : suit son chemin, visible de très près seulement
+    │   ├── npc.py                   # [NA] PNJ (classe prête, aucun posé dans les cartes)
+    │   ├── player.py                # [Théo] Déplacement, animation 4 directions, inventaire
+    │   └── textures.py              # [Tom] NOUVEAU — découpe les bandes du pack, définit les boîtes de collision
+    │
+    ├── environment/
+    │   ├── door.py                  # [Melvin] Portes à clé et à plaque, de face ou de profil
+    │   ├── pressure_plate.py        # [Melvin] Plaques tenues par le joueur ou par un cadavre
+    │   ├── torch.py                 # [Erwan] Torches plantées, flamme animée, vacille selon la tension
+    │   └── trap.py                  # [Inès] Pointes cycliques visibles + piège à fléchettes
+    │
+    ├── mechanics/
+    │   ├── audio_manager.py         # [Léo] NOUVEAU — point d'entrée unique du son, paliers de tension
+    │   ├── death_manager.py         # [Inès] Mort choisie (cadavre + objets) vs subie (rien)
+    │   ├── interaction_manager.py   # [Melvin] Touches E/F/R : ramasser, ouvrir, planter, boire
+    │   ├── inventory_system.py      # [Théo] Sac de 2 places
+    │   ├── level_manager.py         # [Melvin] Construit un étage, simule l'environnement, gère les zones
+    │   ├── lighting_engine.py       # [Léo] Shader d'obscurité + passe de lueur additive
+    │   ├── map_loader.py            # [Melvin] NOUVEAU — lit le .tmx et le traduit en données neutres
+    │   ├── monster_manager.py       # [Inès] Sursis, signaux d'ambiance, traque
+    │   └── score_manager.py         # [Léo] Statistiques de run + classement local
+    │
+    ├── ui/
+    │   ├── dialog_box.py            # [Erwan] Lore et répliques PNJ
+    │   ├── hud.py                   # [Erwan] ATH transparent : coins de l'écran, invite d'interaction
+    │   ├── key_icons.py             # [Erwan] NOUVEAU — touches de clavier dessinées (lettres, flèches)
+    │   ├── screamer.py              # [Inès] NOUVEAU — jumpscare plein écran quand la créature dévore
+    │   ├── menu_components.py       # [Erwan] Boutons et listes navigables
+    │   └── text_cache.py            # [Erwan] NOUVEAU — draw_text_cached, à utiliser au lieu de arcade.draw_text
+    │
+    └── views/
+        ├── game_over_view.py        # [Inès] Défaite + statistiques
+        ├── game_view.py             # [Melvin] Boucle principale : orchestre tous les modules
+        ├── level_select.py          # [Erwan] Sélection de l'étage
+        ├── main_menu.py             # [Erwan] Accueil, lore, mode de jeu, tableau des scores
+        └── victory_view.py          # [Inès] Victoire + statistiques
+```
+
 ---
 
 # Labyrinth of Shadow — base technique
@@ -350,7 +435,7 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
 | Touche | Action |
 |--------|--------|
 | `Z` `Q` `S` `D` ou les flèches | se déplacer |
-| `E` | interagir : fouiller un cadavre, ramasser, ouvrir une porte, parler |
+| `E` | interagir : ramasser un objet, ouvrir une porte, parler — l'invite n'apparaît que si quelque chose est à portée |
 | `F` | planter une torche (éclaire la zone définitivement) |
 | `R` | boire la fiole : mort volontaire |
 | `Échap` | retour au menu |
@@ -358,7 +443,7 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
 ## Ce qui fonctionne déjà
 
 - Vue de dessus, déplacement animé dans quatre directions, collisions avec les murs.
-- **Caméra fixe par zone** : un écran = une zone de 40x20 tuiles, la caméra
+- **Caméra fixe par zone** : un écran = une zone de 40x22 tuiles, la caméra
   saute à la zone adjacente quand le joueur franchit une frontière (petit fondu).
   Chaque étage fait 4 zones. Les frontières de zone sont des murs pleins, percés
   d'un seul passage : là où l'on ne peut pas changer d'écran, il y a un mur.
@@ -366,8 +451,15 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
   objets.
 - **Obscurité** : voile noir percé par un shader, halo autour du joueur, torches
   plantées (lumière permanente qui vacille), cadavres (lueur froide qui pulse).
-- **Mort volontaire** (fiole, touche `R`) : laisse un cadavre lumineux qui
-  conserve l'inventaire. On peut le fouiller plus tard avec `E`.
+  Seules ces trois sources éclairent : un objet posé au sol reste invisible tant
+  qu'on n'apporte pas de lumière.
+- **Mort volontaire** (fiole, touche `R`) : le héros s'effondre à l'écran, et le
+  corps qui reste est littéralement la dernière image de cette animation. C'est
+  donc bien son cadavre qui éclaire la zone, maintient les plaques de pression
+  et arrête les fléchettes.
+- **Les affaires tombent au sol autour du corps** : il n'y a rien à fouiller, on
+  les ramasse comme n'importe quel objet. Elles n'émettent aucune lumière — ce
+  sont la lueur du cadavre et les torches plantées qui les rendent visibles.
 - **Une seule fiole par étage**, posée à quelques pas du départ. Elle réapparaît
   toujours au même endroit après chaque mort, quelle qu'en soit la cause : on ne
   peut donc jamais en stocker, mais on n'est jamais bloqué non plus.
@@ -376,19 +468,17 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
   encore dans le sac au moment d'une mort volontaire se retrouve sur le cadavre
   et se récupère plus tard ; dévoré par la créature, on la perd avec le reste.
 - **Mort par piège** : même conséquence qu'une fiole. Le piège à pointes est
-  totalement invisible jusqu'à sa première victime — cette mort-là est
-  inévitable, c'est ainsi qu'on le découvre. Ensuite il reste visible et **bat
-  en continu** : les pointes sortent puis rentrent, et on traverse entre deux.
-  Il barre toute la largeur du couloir, donc il ne doit jamais rester mortel en
+  visible dès le départ et **bat en continu** : les pointes sortent puis
+  rentrent, et c'est au joueur de lire le rythme pour passer entre deux. Il
+  barre toute la largeur du couloir, donc il ne doit jamais rester mortel en
   permanence, sinon le niveau devient infranchissable
   (`tools/walk_test.py` le vérifie).
-- **Mort par la créature** : aucun cadavre, tous les objets perdus. Les objets
+- **Mort par la créature** : sa gueule remplit l'écran (jumpscare) avant la vie
+  suivante. Aucun cadavre, tous les objets perdus. Les objets
   UNIQUES (la fiole, les clés) reviennent cependant là où le level design les
   avait posés : sans cela, se faire dévorer en portant la clé détruirait le seul
   exemplaire et rendrait l'étage définitivement infinissable. La punition reste
   entière — il faut refaire tout le trajet pour aller la rechercher.
-- Un cadavre qui **porte encore des objets** brille plus fort et vire au doré :
-  dans le noir, c'est le seul moyen de retrouver ce qu'on a laissé derrière soi.
 - **Physique des cadavres** : ils maintiennent une plaque de pression enfoncée
   (donc une porte ouverte) et bloquent les fléchettes, mais on marche dessus :
   un cadavre ne condamne jamais un couloir.
@@ -402,6 +492,11 @@ python main.py --map level_test.tmx --skip-menu  # charger une carte precise, sa
   d'étage, victoire et game over avec statistiques.
 - **Modes de jeu** : Exploration (libre), Sursis (8 morts max), Contre-la-montre
   (5 minutes).
+- **Interface sans bandeau** : tout est dessiné en transparence par-dessus le
+  jeu, qui occupe la fenêtre entière. Étage et zone en haut à gauche, temps et
+  morts en haut à droite, inventaire et rappels de touches (icônes de clavier)
+  en bas à droite. L'invite « E » n'apparaît que lorsqu'une interaction est
+  réellement possible.
 
 ## Où brancher vos ajouts (travail en parallèle)
 
@@ -466,4 +561,4 @@ changement de sprite, relancez `python tools/walk_test.py`.
 - Pas de mémoire des zones explorées (la carte ne reste pas partiellement
   visible après la mort) : `lighting_engine` est l'endroit pour l'ajouter.
 - Les sons sont encore des placeholders de synthèse.
-- Pas d'animation de mort ni d'attaque (le pack en fournit pourtant).
+- Pas d'animation d'attaque (le pack en fournit pourtant une).

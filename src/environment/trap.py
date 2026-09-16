@@ -8,11 +8,12 @@ joueur qui ne l'a pas vu venir, mais il est aussi le moyen de mourir
 volontairement quand la fiole a déjà servi.
 
 Deux pièges pour l'instant :
-  - `SpikeTrap` : totalement invisible tant qu'il n'a jamais été déclenché — la
-    première mort est donc inévitable, et c'est voulu. Ensuite le piège reste
-    visible et BAT EN CONTINU : les pointes jaillissent, retombent, et le joueur
-    qui a compris le rythme passe entre deux. Un piège mortel en permanence
-    condamnerait le couloir, puisqu'on ne peut pas le contourner.
+  - `SpikeTrap` : visible en permanence, et il BAT EN CONTINU. Les pointes
+    jaillissent puis retombent : le joueur voit le danger et doit l'esquiver en
+    lisant le rythme. Il barre toute la largeur du couloir, donc il ne doit
+    jamais rester mortel en permanence — ce serait un cul-de-sac définitif.
+    Et quand le joueur veut mourir pour laisser son corps à cet endroit, il lui
+    suffit d'attendre les pointes.
   - `DartTrap` : grille percée dans un mur qui tire des projectiles à intervalle
     régulier en travers d'un couloir. Un cadavre posé sur la trajectoire ARRÊTE
     les projectiles — le joueur se fabrique un bouclier avec son ancien corps.
@@ -36,37 +37,18 @@ DIRECTION_VECTORS = {
 
 
 class SpikeTrap(arcade.Sprite):
-    """Piège à pointes : invisible et mortel, puis visible et cyclique."""
+    """Piège à pointes, visible en permanence et cyclique."""
 
     def __init__(self, center_x: float, center_y: float):
         self.frames = load_strip(
             "trap_spike_strip.png", C.TILE_SIZE, C.TILE_SIZE, tuple(centered_box(28, 28))
         )
         super().__init__(self.frames[0], center_x=center_x, center_y=center_y)
-
-        self.triggered = False
         self.frame_index = 0
-        # Invisible : le joueur ne doit avoir AUCUN indice avant de marcher
-        # dessus. C'est la première mort qui révèle le piège.
-        self.alpha = 0
-
-    def reveal(self) -> None:
-        """Révèle le piège : il se met à battre au vu et au su du joueur."""
-        if self.triggered:
-            return
-        self.triggered = True
-        self.alpha = 255
 
     @property
     def is_lethal(self) -> bool:
-        """
-        Vrai quand le piège tue à cet instant.
-
-        Tant qu'il n'a pas été découvert, il tue en permanence. Une fois révélé,
-        il ne tue que pendant la fraction du cycle où les pointes sont sorties.
-        """
-        if not self.triggered:
-            return True
+        """Vrai uniquement pendant la fraction du cycle où les pointes sont sorties."""
         return self.frame_index in C.SPIKE_LETHAL_FRAMES
 
     def update_cycle(self, clock: float) -> None:
@@ -77,8 +59,6 @@ class SpikeTrap(arcade.Sprite):
         couloir de deux tuiles jaillissent donc en même temps, sinon il serait
         impossible de traverser.
         """
-        if not self.triggered:
-            return
         phase = clock % C.SPIKE_CYCLE_DURATION
         if phase < C.SPIKE_SAFE_DURATION:
             self.frame_index = 0

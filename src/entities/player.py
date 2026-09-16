@@ -35,6 +35,16 @@ def _load_player_textures() -> dict[tuple[str, str], list[arcade.Texture]]:
         )
 
     return {
+        # Une seule bande de mort dans le pack : elle sert quelle que soit la
+        # direction regardée au moment de la chute. Elle a son PROPRE format
+        # (48x48, un corps allongé est large) : la découper comme les autres
+        # coupe chaque pose en deux et fait clignoter l'animation.
+        ("death", "any"): load_strip(
+            "player_death.png",
+            *C.PLAYER_DEATH_FRAME_SIZE,
+            box,
+            lift=C.PLAYER_ART_LIFT,
+        ),
         ("idle", "down"): strip("player_idle_down.png"),
         ("idle", "up"): strip("player_idle_up.png"),
         ("idle", "right"): strip("player_idle_side.png"),
@@ -66,6 +76,11 @@ class Player(arcade.Sprite):
         self.direction = "down"
         self.facing = (0.0, -1.0)
 
+        # Mort volontaire : le personnage s'effondre à l'écran avant que la vie
+        # suivante ne commence. `dying` gèle ses entrées, et la dernière image
+        # de l'animation devient le sprite du cadavre laissé sur place.
+        self.dying = False
+        self._death_elapsed = 0.0
         self._frame_index = 0.0
 
     # ------------------------------------------------------------------ #
@@ -100,8 +115,32 @@ class Player(arcade.Sprite):
         self.move_x = self.move_y = 0.0
         self.change_x = self.change_y = 0.0
 
+    # ------------------------------------------------------------------ #
+    # Mort
+    # ------------------------------------------------------------------ #
+    def start_dying(self) -> None:
+        """Déclenche l'animation d'effondrement."""
+        self.stop()
+        self.dying = True
+        self._death_elapsed = 0.0
+
+    @property
+    def death_animation_finished(self) -> bool:
+        return self._death_elapsed >= C.DEATH_ANIMATION_DURATION
+
+    def _update_death_animation(self, delta_time: float) -> None:
+        """Joue la chute une seule fois, puis reste sur le corps au sol."""
+        self._death_elapsed += delta_time
+        frames = self.animations[("death", "any")]
+        progress = min(1.0, self._death_elapsed / C.DEATH_ANIMATION_DURATION)
+        self.texture = frames[min(len(frames) - 1, int(progress * len(frames)))]
+
     def update_animation(self, delta_time: float = 1 / 60, *args, **kwargs) -> None:
         """Fait tourner l'animation correspondant à l'état courant."""
+        if self.dying:
+            self._update_death_animation(delta_time)
+            return
+
         moving = self.move_x or self.move_y
         state = "run" if moving else "idle"
         frames = self.animations[(state, self.direction)]
@@ -132,4 +171,6 @@ class Player(arcade.Sprite):
         self.is_alive = True
         self.alpha = 255
         self.direction = "down"
+        self.dying = False
+        self._death_elapsed = 0.0
         self._frame_index = 0.0

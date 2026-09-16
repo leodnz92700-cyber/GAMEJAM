@@ -29,20 +29,27 @@ LEADERBOARD_PATH = DATA_DIR / "leaderboard.json"
 # Fenêtre et découpage en zones
 # --------------------------------------------------------------------------- #
 WINDOW_TITLE = "Labyrinth of Shadow"
-WINDOW_WIDTH = 1280
-WINDOW_HEIGHT = 720
-
-HUD_HEIGHT = 80                       # bandeau d'interface en bas de l'écran
-VIEWPORT_WIDTH = WINDOW_WIDTH
-VIEWPORT_HEIGHT = WINDOW_HEIGHT - HUD_HEIGHT
-
 TILE_SIZE = 32
-# Une zone occupe exactement le viewport : la caméra ne suit jamais le joueur,
-# elle saute d'une zone à l'autre quand il franchit une frontière.
-ZONE_COLS = VIEWPORT_WIDTH // TILE_SIZE      # 40
-ZONE_ROWS = VIEWPORT_HEIGHT // TILE_SIZE     # 20
+
+# Une zone occupe exactement TOUT l'écran : il n'y a aucun bandeau d'interface,
+# l'ATH est dessiné en transparence par-dessus le jeu. La taille de la fenêtre
+# est donc un multiple exact de la tuile, pour qu'une zone tombe juste. La
+# caméra ne suit jamais le joueur : elle saute d'une zone à l'autre quand il
+# franchit une frontière.
+ZONE_COLS = 40
+ZONE_ROWS = 22
+WINDOW_WIDTH = ZONE_COLS * TILE_SIZE          # 1280
+WINDOW_HEIGHT = ZONE_ROWS * TILE_SIZE         # 704
+
+# Le viewport de jeu, c'est l'écran entier. Ces alias restent pour la lisibilité
+# du code de rendu (moteur de lumière, fondus, jumpscare).
+VIEWPORT_WIDTH = WINDOW_WIDTH
+VIEWPORT_HEIGHT = WINDOW_HEIGHT
+
 ZONE_WIDTH = ZONE_COLS * TILE_SIZE
 ZONE_HEIGHT = ZONE_ROWS * TILE_SIZE
+ZONES_X = 2                           # nombre de zones par étage, en largeur
+ZONES_Y = 2                           # ... et en hauteur
 ZONE_TRANSITION_DURATION = 0.22              # petit fondu au noir au changement de zone
 
 # --------------------------------------------------------------------------- #
@@ -68,15 +75,27 @@ PLAYER_ART_LIFT = 10
 PLAYER_IDLE_FPS = 6.0
 PLAYER_RUN_FPS = 12.0
 
+# Mort volontaire : le héros s'effondre à l'écran avant que la vie suivante ne
+# commence. La DERNIÈRE image de cette animation est aussi le sprite du cadavre,
+# ce qui rend la transition invisible — c'est bien le corps du joueur qui reste
+# sur place, et c'est lui qui bloquera les fléchettes.
+# ATTENTION : la bande de mort n'a PAS le même format que les autres. Elle fait
+# 6 images de 48x48, parce qu'un corps allongé est plus large qu'un personnage
+# debout. La découper en 32 de large coupe chaque pose en deux et donne une
+# animation qui clignote.
+PLAYER_DEATH_FRAME_SIZE = (48, 48)
+PLAYER_DEATH_FRAME_COUNT = 6
+DEATH_ANIMATION_DURATION = 0.95
+CORPSE_HIT_BOX = (30, 22)            # un corps allongé est large et bas
+
 # --------------------------------------------------------------------------- #
 # Animations du décor (nombre d'images des bandes du pack)
 # --------------------------------------------------------------------------- #
 TORCH_FRAME_COUNT = 3
 TORCH_FPS = 7.0
-# Piège à pointes : une fois déclenché, il bat en continu. C'est ce qui le rend
-# franchissable — dans un couloir d'une seule tuile, un piège mortel en
-# permanence condamnerait le niveau. Le joueur apprend le rythme et passe entre
-# deux jaillissements ; s'il veut mourir dessus, il lui suffit d'attendre.
+# Piège à pointes : visible dès le départ, et il bat en continu. Le joueur voit
+# le danger, apprend le rythme et passe entre deux jaillissements ; s'il veut
+# mourir dessus pour y laisser son corps, il lui suffit d'attendre.
 SPIKE_FRAME_COUNT = 7
 SPIKE_SAFE_DURATION = 1.9        # pointes rentrées : on peut traverser
 SPIKE_STRIKE_DURATION = 1.1      # jaillissement puis redescente
@@ -95,7 +114,17 @@ MONSTER_RELEASE_TIME = 48.0           # secondes avant que la bête soit lâché
 MONSTER_SPEED = 165.0                 # légèrement plus lente que le joueur
 MONSTER_KILL_RADIUS = 26.0
 MONSTER_REPATH_INTERVAL = 0.45        # recalcul du chemin vers le joueur
-MONSTER_VISIBLE_RADIUS = 160.0        # au-delà, elle reste invisible
+MONSTER_VISIBLE_RADIUS = 160.0   # au-delà, la créature reste invisible
+
+# Jumpscare : quand la créature dévore le joueur, sa gueule remplit l'écran
+# avant le noir. Sans ça, la mort la plus punitive du jeu passait inaperçue.
+SCREAMER_FLASH_DURATION = 0.10       # éclair blanc
+SCREAMER_FACE_DURATION = 0.85        # la gueule à l'écran, qui tremble
+SCREAMER_FADE_DURATION = 0.45        # fondu au noir avant la vie suivante
+SCREAMER_DURATION = (
+    SCREAMER_FLASH_DURATION + SCREAMER_FACE_DURATION + SCREAMER_FADE_DURATION
+)
+SCREAMER_SHAKE = 26.0                # amplitude du tremblement, en pixels
 
 # Paliers de tension, en fraction de MONSTER_RELEASE_TIME.
 # À chaque palier franchi, monster_manager déclenche un signal d'ambiance.
@@ -163,17 +192,29 @@ TEST_LEVEL = "level_test.tmx"
 # Couleurs
 # --------------------------------------------------------------------------- #
 COLOR_BACKGROUND = (10, 10, 14)
-COLOR_HUD_BACKGROUND = (18, 18, 24)
+COLOR_HUD_BACKGROUND = (18, 18, 24)   # encore utilisé par les menus
 COLOR_HUD_BORDER = (52, 52, 66)
+# L'ATH est posé en transparence sur le jeu : sans ombre portée, le texte
+# devient illisible dès qu'il passe sur une zone éclairée.
+COLOR_TEXT_SHADOW = (0, 0, 0, 190)
+COLOR_KEYCAP_FILL = (26, 26, 34, 215)
+COLOR_KEYCAP_BORDER = (126, 126, 148)
+COLOR_KEYCAP_LABEL = (222, 222, 234)
 COLOR_TEXT = (216, 216, 228)
 COLOR_TEXT_DIM = (124, 124, 142)
 COLOR_ACCENT = (198, 164, 96)
 COLOR_DANGER = (188, 68, 68)
 COLOR_CORPSE_GLOW = (120, 200, 220)
-# Un cadavre qui porte encore des objets vire au doré et éclaire plus loin.
-COLOR_CORPSE_LOOT_GLOW = (235, 200, 120)
-CORPSE_LOOT_LIGHT_FACTOR = 1.35
 COLOR_TORCH_GLOW = (255, 176, 88)
+
+# --------------------------------------------------------------------------- #
+# Interface (tout est dessiné en transparence, sans aucun bandeau)
+# --------------------------------------------------------------------------- #
+UI_MARGIN = 22                        # marge depuis les bords de l'écran
+UI_SLOT_SIZE = 50                     # case d'inventaire
+UI_SLOT_GAP = 10
+UI_KEYCAP_SIZE = 22                   # touche de clavier dessinée
+UI_ROW_HEIGHT = 30                    # hauteur d'une ligne de rappel de touche
 
 # --------------------------------------------------------------------------- #
 # Types d'objets ramassables
@@ -192,6 +233,14 @@ ITEM_LABELS = {
     ITEM_KEY: "Cle",
     ITEM_VIAL: "Fiole",
     ITEM_TORCH: "Torche",
+}
+
+# Même objet, mais tourné pour entrer dans une phrase : "Ramasser la fiole",
+# "Tu reprends la cle". Évite les formulations télégraphiques de l'invite.
+ITEM_PHRASES = {
+    ITEM_KEY: "la cle",
+    ITEM_VIAL: "la fiole",
+    ITEM_TORCH: "la torche",
 }
 
 # --------------------------------------------------------------------------- #

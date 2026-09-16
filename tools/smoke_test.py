@@ -35,13 +35,20 @@ class Runner:
         self.steps = self._script()
 
     def _script(self):
-        """(frame, description, action) — action recoit la vue courante."""
+        """
+        (frame, description, action) — action recoit la vue courante.
+
+        Les numeros de frame tiennent compte de la mise en scene de la mort :
+        environ 57 frames de chute pour une mort choisie, puis 27 d'ecran noir,
+        et environ 84 frames de jumpscare pour une mort par devoration.
+        """
         return [
             (2, "menu", lambda view: self.shot("01_menu")),
             (3, "aller sur Entrer", lambda view: view.on_key_press(arcade.key.DOWN, 0)),
             (4, "aller sur Entrer", lambda view: view.on_key_press(arcade.key.DOWN, 0)),
             (5, "demarrer la partie", lambda view: view.on_key_press(arcade.key.ENTER, 0)),
             (10, "partie lancee", lambda view: self.shot("02_spawn")),
+            (11, "les pieges sont visibles des le depart", self.check_traps_visible),
             (12, "avancer a droite", lambda view: view.on_key_press(arcade.key.D, 0)),
             (80, "stop", lambda view: view.on_key_release(arcade.key.D, 0)),
             (82, "apres deplacement", lambda view: self.shot("03_marche")),
@@ -50,21 +57,25 @@ class Runner:
             (88, "reprendre une torche en main", self.give_spare_torch),
             (90, "torche plantee", lambda view: self.shot("04_torche")),
             (92, "boire la fiole", lambda view: view.on_key_press(arcade.key.R, 0)),
-            (150, "cadavre laisse", lambda view: self.shot("05_cadavre")),
-            (152, "verifier le cadavre", self.check_corpse),
-            (153, "verifier la fiole unique", self.check_vial_respawn),
-            (154, "teleporter pres du piege", self.teleport_to_spike),
-            (170, "mort par piege", lambda view: self.shot("06_piege")),
-            (230, "liberer la creature", self.release_monster),
-            (236, "creature lachee", lambda view: self.shot("07_creature")),
-            (238, "verifier la creature", self.check_monster),
-            (240, "prendre la cle", self.take_key),
-            (242, "se faire devorer avec la cle", self.feed_to_monster),
-            (300, "verifier le retour de la cle", self.check_key_restored),
-            (302, "changer de zone", self.teleport_next_zone),
-            (320, "zone suivante", lambda view: self.shot("08_zone")),
-            (322, "verifier le changement de zone", self.check_zone),
-            (324, "fin", lambda view: arcade.close_window()),
+            (118, "le heros s'effondre", lambda view: self.shot("05_chute")),
+            (120, "verifier l'animation de chute", self.check_dying),
+            (190, "cadavre et affaires au sol", lambda view: self.shot("06_cadavre")),
+            (192, "verifier le cadavre", self.check_corpse),
+            (193, "verifier la fiole unique", self.check_vial_respawn),
+            (195, "teleporter sur le piege", self.teleport_to_spike),
+            (215, "mort par piege", lambda view: self.shot("07_piege")),
+            (285, "liberer la creature", self.release_monster),
+            (291, "creature lachee", lambda view: self.shot("08_creature")),
+            (293, "verifier la creature", self.check_monster),
+            (295, "prendre la cle", self.take_key),
+            (297, "se faire devorer avec la cle", self.feed_to_monster),
+            (330, "jumpscare", lambda view: self.shot("09_screamer")),
+            (332, "verifier le jumpscare", self.check_screamer),
+            (395, "verifier le retour de la cle", self.check_key_restored),
+            (397, "changer de zone", self.teleport_next_zone),
+            (415, "zone suivante", lambda view: self.shot("10_zone")),
+            (417, "verifier le changement de zone", self.check_zone),
+            (419, "fin", lambda view: arcade.close_window()),
         ]
 
     # ---------------------------------------------------------------- #
@@ -82,6 +93,13 @@ class Runner:
 
         view.player.pick_up(Item(C.ITEM_TORCH))
 
+    def check_dying(self, view) -> None:
+        """Pendant la chute, rien n'est encore applique : ni cadavre, ni respawn."""
+        if not view.player.dying:
+            self.errors.append("le heros ne joue pas son animation de mort")
+        if view.level.corpse_list:
+            self.errors.append("le cadavre apparait avant la fin de la chute")
+
     def check_corpse(self, view) -> None:
         corpses = view.level.corpse_list
         if len(corpses) != 1:
@@ -90,10 +108,25 @@ class Runner:
             )
         if len(view.level.torch_list) != 1:
             self.errors.append("la torche plantee n'a pas ete enregistree")
-        if corpses and [item.type for item in corpses[0].items] != [C.ITEM_TORCH]:
+        if not corpses:
+            return
+
+        # La torche non plantee doit etre tombee AU SOL a cote du corps, et non
+        # rangee dans le cadavre : on ne fouille plus les cadavres.
+        dropped = [
+            sprite for sprite in view.level.item_list
+            if sprite.item.properties.get("dropped")
+        ]
+        if [sprite.item.type for sprite in dropped] != [C.ITEM_TORCH]:
             self.errors.append(
-                "le cadavre devrait porter la torche non plantee, et elle seule "
-                f"(il porte {[item.type for item in corpses[0].items]})"
+                "la torche devrait etre tombee au sol pres du corps "
+                f"(objets au sol : {[s.item.type for s in dropped]})"
+            )
+            return
+        distance = arcade.math.get_distance(*dropped[0].position, *corpses[0].position)
+        if distance > C.TILE_SIZE * 2.5:
+            self.errors.append(
+                f"la torche est tombee a {distance:.0f} px du corps, c'est trop loin"
             )
 
     def check_vial_respawn(self, view) -> None:
@@ -110,14 +143,26 @@ class Runner:
         if expected is None or arcade.math.get_distance(*vials[0].position, *expected) > 4:
             self.errors.append("la fiole n'est pas revenue a son emplacement d'origine")
 
-    def teleport_to_spike(self, view) -> None:
-        from src.environment.trap import SpikeTrap
+    def check_traps_visible(self, view) -> None:
+        """
+        Les pieges ne se cachent plus : on les voit, on les esquive.
 
-        spikes = [t for t in view.level.trap_list if isinstance(t, SpikeTrap)]
+        C'est un choix de game design : si un piege redevenait invisible, le
+        joueur ne pourrait plus le lire et mourrait sans comprendre.
+        """
+        hidden = [trap for trap in view.level.spike_traps() if trap.alpha < 255]
+        if hidden:
+            self.errors.append(f"{len(hidden)} piege(s) invisible(s) au depart")
+
+    def teleport_to_spike(self, view) -> None:
+        spikes = view.level.spike_traps()
         if not spikes:
             self.errors.append("aucun piege a pointes dans la carte")
             return
         view.player.position = spikes[0].position
+        # On cale l'horloge du niveau sur le moment ou les pointes sont sorties,
+        # sinon le piege serait inoffensif au moment de la teleportation.
+        view.level.clock = C.SPIKE_SAFE_DURATION + 0.2
 
     def release_monster(self, view) -> None:
         view.monster_manager.elapsed = C.MONSTER_RELEASE_TIME + 0.1
@@ -159,6 +204,13 @@ class Runner:
             return
         view.monster_manager.monster.position = view.player.position
 
+    def check_screamer(self, view) -> None:
+        """Le jumpscare doit etre a l'ecran, et la mort deja enregistree."""
+        if not view.screamer.active:
+            self.errors.append("aucun jumpscare apres une mort par devoration")
+        if view.player.is_alive:
+            self.errors.append("le joueur est encore vivant pendant le jumpscare")
+
     def check_key_restored(self, view) -> None:
         """
         Une cle devoree doit revenir a sa place.
@@ -173,6 +225,8 @@ class Runner:
             )
         if len(view.level.corpse_list) != self.corpses_before_devour:
             self.errors.append("la creature a laisse un cadavre alors qu'elle devore tout")
+        if view.screamer.active:
+            self.errors.append("le jumpscare n'est pas termine avant la vie suivante")
 
         keys = [s for s in view.level.item_list if s.item.type == C.ITEM_KEY]
         if len(keys) != 1:

@@ -18,7 +18,7 @@ Ce qui est importé :
   - le fantôme, qui sert de créature ;
   - torche, piège, plaque de pression (animés) ;
   - portes de face et de profil, ouvertes et fermées ;
-  - fiole, clé, ossements (le cadavre), escalier de sortie.
+  - fiole, clé, escalier de sortie, ossements décoratifs.
 """
 from __future__ import annotations
 
@@ -40,8 +40,13 @@ DIRECT_COPIES = [
     ("Characters/Hero_Warrior/Strips/Run/down_strip.png", "player_run_down.png"),
     ("Characters/Hero_Warrior/Strips/Run/side_strip.png", "player_run_side.png"),
     ("Characters/Hero_Warrior/Strips/Run/up_strip.png", "player_run_up.png"),
+    # Le heros s'effondre quand il boit la fiole, et sa derniere image EST le
+    # cadavre laisse au sol : le corps reste, ce ne sont pas des ossements.
+    ("Characters/Hero_Warrior/Strips/Death/death_strip.png", "player_death.png"),
     ("Enemies/Ghost/Strips/idle_strip.png", "monster_idle.png"),
     ("Enemies/Ghost/Strips/move_strip.png", "monster_move.png"),
+    # Gueule ouverte du fantome : sert au jumpscare plein ecran quand il devore.
+    ("Enemies/Ghost/Strips/attack_strip.png", "monster_attack.png"),
     ("Props/Animated/torch_strip.png", "torch_strip.png"),
     ("Props/Animated/trap1_strip.png", "trap_spike_strip.png"),
     ("Props/Animated/pressure_plate_strip.png", "plate_strip.png"),
@@ -49,8 +54,9 @@ DIRECT_COPIES = [
     ("Props/Static/Front_Door_Open.png", "door_front_open.png"),
     ("Props/Static/Side_Door_Closed.png", "door_side_closed.png"),
     ("Props/Static/Side_Door_Open.png", "door_side_open.png"),
-    ("Props/Static/bones1.png", "corpse.png"),
-    ("Props/Static/bones2.png", "corpse_alt.png"),
+    # Ossements : simple decor pour le level design, PAS le cadavre du joueur.
+    ("Props/Static/bones1.png", "decor_bones1.png"),
+    ("Props/Static/bones2.png", "decor_bones2.png"),
     ("Items/Static/health_potion.png", "item_vial.png"),
     ("Items/Static/golden_key.png", "item_key.png"),
     ("Enemies/Skeleton warrior/Strips/Idle/down_strip.png", "npc_idle.png"),

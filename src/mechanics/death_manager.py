@@ -7,8 +7,9 @@ Moteur central du jeu : c'est ici, et nulle part ailleurs, qu'on décide des
 conséquences d'une mort.
 
   - Mort VOLONTAIRE (fiole) ou par PIÈGE : le corps reste dans le labyrinthe.
-    Il brille, il a une présence physique, et il conserve tout ce que le joueur
-    transportait. C'est un investissement pour la vie suivante.
+    Il brille, il a une présence physique, et tout ce que le joueur transportait
+    tombe au sol autour de lui, prêt à être ramassé. C'est un investissement pour
+    la vie suivante.
   - Mort par la CRÉATURE : le corps est dévoré. Aucun cadavre, aucun objet
     récupérable, aucun nouveau repère. La vie est intégralement perdue.
 
@@ -49,14 +50,16 @@ class DeathManager:
         leaves_corpse = cause in (C.DEATH_VIAL, C.DEATH_TRAP)
 
         if leaves_corpse:
-            level.add_corpse(player.center_x, player.center_y, carried, cause)
+            # Le corps reste sur place, et les affaires tombent autour de lui.
+            level.add_corpse(player.center_x, player.center_y, cause)
+            level.drop_items(player.center_x, player.center_y, carried)
             if cause == C.DEATH_VIAL:
-                message = "Tu bois la fiole. Ton corps restera ici, et ce qu'il porte avec."
+                message = "Tu bois la fiole. Ton corps reste ici, et tes affaires avec."
                 self.audio.play("death_vial")
             else:
                 message = (
-                    "Le piege t'a eu. Ses pointes rentrent et ressortent : "
-                    "regarde le rythme et passe entre deux."
+                    "Mauvais timing. Les pointes rentrent et ressortent : "
+                    "attends ton tour et passe entre deux."
                 )
                 self.audio.play("trap_trigger")
             items_lost = 0
