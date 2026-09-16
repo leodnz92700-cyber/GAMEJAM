@@ -40,7 +40,7 @@ TILE_SIZE = 32
 # caméra ne suit jamais le joueur : elle saute d'une zone à l'autre quand il
 # franchit une frontière.
 ZONE_COLS = 40
-ZONE_ROWS = 22
+ZONE_ROWS = 20
 WINDOW_WIDTH = ZONE_COLS * TILE_SIZE          # 1280
 WINDOW_HEIGHT = ZONE_ROWS * TILE_SIZE         # 704
 

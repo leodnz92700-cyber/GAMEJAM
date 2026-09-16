@@ -57,9 +57,10 @@ class PressurePlate(arcade.Sprite):
 def make_plate_from_map_object(map_object) -> PressurePlate:
     """Construit une plaque à partir d'un objet Tiled."""
     properties = map_object.properties
+    door_id = properties.get("door_id") or properties.get("groupe")
     return PressurePlate(
         center_x=map_object.center_x,
         center_y=map_object.center_y,
         plate_id=str(properties.get("plate_id", f"plate_{int(map_object.center_x)}")),
-        door_id=str(properties["door_id"]) if "door_id" in properties else None,
+        door_id=str(door_id) if door_id else None,
     )

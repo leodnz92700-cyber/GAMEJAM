@@ -38,11 +38,13 @@ class MapObject:
 
     layer: str
     type: str
+    name: str = ""
     center_x: float
     center_y: float
     width: float
     height: float
     properties: dict[str, Any] = field(default_factory=dict)
+    rotation: float = 0.0
 
     @property
     def position(self) -> tuple[float, float]:
@@ -189,11 +191,13 @@ def load_map(map_name: str) -> LoadedMap:
                 MapObject(
                     layer=layer_name,
                     type=object_type,
+                    name=tiled_object.name or "",
                     center_x=center_x,
                     center_y=center_y,
                     width=width,
                     height=height,
                     properties=dict(tiled_object.properties or {}),
+                    rotation=getattr(tiled_object, "rotation", 0.0) or getattr(tiled_object.shape, "rotation", 0.0) or 0.0,
                 )
             )
 

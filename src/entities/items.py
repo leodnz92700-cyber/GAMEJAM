@@ -76,4 +76,9 @@ class ItemSprite(arcade.Sprite):
 
 def make_item_from_map_object(map_object) -> Item:
     """Crée un `Item` à partir d'un objet Tiled (`MapObject`)."""
-    return Item(type=map_object.type, properties=dict(map_object.properties))
+    item_type = map_object.type
+    if item_type == "potion":
+        item_type = "vial"
+    elif item_type == "object" and getattr(map_object, "name", "") == "Shield":
+        item_type = "shield"
+    return Item(type=item_type, properties=dict(map_object.properties))

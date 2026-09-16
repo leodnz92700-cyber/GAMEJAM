@@ -83,7 +83,7 @@ class Level:
             if kind == "spawn":
                 self.spawn_point = map_object.position
 
-            elif kind == "exit":
+            elif kind in ("exit", "end"):
                 # L'escalier fait deux tuiles de haut : on le cale sur la tuile
                 # du bas (sa partie haute déborde volontairement sur le mur) et
                 # on ne déclenche la sortie que sur cette tuile du bas.
@@ -95,7 +95,7 @@ class Level:
                 self.exit_list.append(sprite)
                 self.exit_rect = map_object.position
 
-            elif kind in ("key", "vial", "torch", "shield"):
+            elif kind in ("key", "vial", "torch", "shield", "potion", "object"):
                 self.item_list.append(
                     ItemSprite(make_item_from_map_object(map_object), *map_object.position)
                 )
@@ -104,7 +104,7 @@ class Level:
                         (kind, map_object.position, dict(map_object.properties))
                     )
 
-            elif kind in ("door_key", "door_plate"):
+            elif kind in ("door_key", "door_plate", "door"):
                 door = make_door_from_map_object(map_object)
                 self.door_list.append(door)
                 self.door_blocker_list.append(door)
@@ -113,14 +113,14 @@ class Level:
             elif kind == "pressure_plate":
                 self.plate_list.append(make_plate_from_map_object(map_object))
 
-            elif kind in ("spike", "archer", "dart"):
+            elif kind in ("spike", "archer", "dart", "skeleton"):
                 trap = make_trap_from_map_object(map_object)
                 if isinstance(trap, SkeletonArcher):
                     self.archer_list.append(trap)
                 else:
                     self.trap_list.append(trap)
 
-            elif kind == "npc":
+            elif kind in ("npc", "pnj"):
                 lines = str(map_object.properties.get("lines", "...")).split("|")
                 npc = NPC(
                     *map_object.position,

@@ -92,12 +92,20 @@ class Door(arcade.Sprite):
 def make_door_from_map_object(map_object) -> Door:
     """Construit la bonne variante de porte à partir d'un objet Tiled."""
     properties = map_object.properties
-    is_plate_door = map_object.type == "door_plate" or "plate_id" in properties
+    door_id = str(properties.get("door_id") or properties.get("groupe") or f"door_{int(map_object.center_x)}")
+    is_plate_door = map_object.type == "door_plate" or "plate_id" in properties or "groupe" in properties
+    
+    passage = str(properties.get("passage", "vertical"))
+    if "passage" not in properties and map_object.rotation:
+        # Tiled utilise souvent 90, -90, 270 pour l'horizontal. 
+        if abs(map_object.rotation) in (90, 270):
+            passage = "horizontal"
+        
     return Door(
         center_x=map_object.center_x,
         center_y=map_object.center_y,
-        door_id=str(properties.get("door_id", f"door_{int(map_object.center_x)}")),
+        door_id=door_id,
         key_id=None if is_plate_door else str(properties.get("key_id", "key_1")),
-        plate_id=str(properties["plate_id"]) if is_plate_door else None,
-        passage=str(properties.get("passage", "vertical")),
+        plate_id=door_id if is_plate_door else None,
+        passage=passage,
     )

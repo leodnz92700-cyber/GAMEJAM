@@ -215,7 +215,7 @@ def make_trap_from_map_object(map_object):
     properties = map_object.properties
     # "dart" reste accepté : c'est le nom historique du piège dans les cartes
     # déjà dessinées, et il désigne aujourd'hui le squelette archer.
-    if map_object.type in ("archer", "dart"):
+    if map_object.type in ("archer", "dart", "skeleton"):
         return SkeletonArcher(
             center_x=map_object.center_x,
             center_y=map_object.center_y,
