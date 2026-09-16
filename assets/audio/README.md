@@ -19,7 +19,9 @@ seule horloge :
 
 1. **quatre grognements d'alerte**, un par palier d'approche ;
 2. **sa respiration**, souffle occasionnel tant que la bête est loin, halètement
-   continu à partir du palier « near » ;
+   continu à partir du palier « close ». Elle est volontairement rare et
+   discrète : c'est un fond permanent, quelques décibels de trop et elle passe
+   de « le personnage a peur » à « quelqu'un souffle dans le micro » ;
 3. **la musique de poursuite**, qui démarre quand la créature est proche — donc
    *avant* qu'elle ne soit visible.
 
@@ -32,7 +34,7 @@ grincement. Une nappe continue noierait les trois signaux ci-dessus.
 | Nom logique | Fichier | Quand il joue |
 |---|---|---|
 | `footstep` | `player/footstep.wav` | un pas toutes les 0,34 s tant que le joueur se déplace |
-| `breathing` | `player/breathing.wav` | au hasard toutes les 18 à 38 s quand tout est calme ; **en boucle** dès le palier « near » |
+| `breathing` | `player/breathing.wav` | au hasard toutes les 30 à 60 s quand tout est calme ; **en boucle** à partir du palier « close » |
 | `pain` | `player/pain.wav` | à l'instant où les pointes ou une flèche touchent |
 | `potion_get` | `items/potion/get.wav` | ramassage de la fiole |
 | `potion_use` | `items/potion/use.wav` | `R` : le joueur boit (le son part au moment de la gorgée, pas à la fin de la chute) |
@@ -47,8 +49,8 @@ grincement. Une nappe continue noierait les trois signaux ci-dessus.
 | `plate_release` | `misc/plate/release_pressure_plate.wav` | une plaque se relâche |
 | `spike_strike` | `misc/trap/spiketrap_open.wav` | les pointes jaillissent, **une seule fois par cycle**, d'autant plus fort qu'on est près (voir ci-dessous) |
 | `arrow_shot` | `misc/trap/arrow_shot.wav` | l'archer décoche, d'autant plus fort qu'on est près (voir ci-dessous) |
-| `water_drop` | `ambiance/water_drop.wav` | ambiance aléatoire, toutes les 12 à 35 s |
-| `squeak` | `ambiance/squeak.wav` | idem |
+| `water_drop` | `ambiance/water_drop.wav` | ambiance aléatoire, toutes les 7 à 20 s — tiré **4 fois plus souvent** que le grincement |
+| `squeak` | `ambiance/squeak.wav` | idem, mais rare : il dure 10 s et lasserait à la même fréquence |
 | `menu_music` | `ambiance/mainmenu/mainmenu_sound.mp3` | en boucle sur l'accueil **et** sur les écrans de fin |
 | `ui_hover` | `menu/hover_button.wav` | la sélection du menu change (clavier ou souris) |
 | `ui_click` | `menu/button_click.wav` | validation d'un bouton |
@@ -56,9 +58,9 @@ grincement. Une nappe continue noierait les trois signaux ci-dessus.
 | `alert_near` | `monster/alerts/mi_distance.wav` | palier 2 — « Des griffes raclent la pierre. » |
 | `alert_close` | `monster/alerts/near.wav` | palier 3 — « Des pas courent dans le noir. » |
 | `alert_released` | `monster/alerts/now.wav` | palier 4 — « Elle est la. » |
-| `monster_released` | `monster/final_timer.wav` | **superposé** à `alert_released` : le sursis est fini |
+| `monster_released` | `monster/kill_sound.wav` | **superposé** à `alert_released` : le sursis est fini |
 | `monster_chase` | `monster/monster_chase.wav` | en boucle tant que la créature est à moins de 340 px |
-| `monster_kill` | `monster/kill_sound.wav` | le jumpscare : le joueur est dévoré |
+| `monster_kill` | `monster/final_timer.wav` | le jumpscare : le joueur est dévoré |
 | `victory` | `misc/victory.wav` | écran de victoire |
 | `game_over` | `misc/game_over.wav` | écran de défaite |
 
@@ -124,11 +126,68 @@ Les placeholders historiques de la racine (`ambience_drone.wav`, `growl_far.wav`
 chargés. Seul `pickup.wav` sert encore, pour les objets sans son dédié. On peut
 supprimer les autres une fois qu'on est sûr de ne plus vouloir comparer.
 
+## Niveaux : tous les sons doivent sortir pareil
+
+Les fichiers livrés n'avaient **pas du tout le même niveau d'enregistrement** :
+34 dB d'écart entre le clic de menu (-7 dBFS) et la respiration (-41 dBFS), soit
+un facteur 50 en amplitude. Régler `AUDIO_VOLUMES` à l'oreille ne peut pas
+marcher dans ces conditions — un même coefficient donne un résultat
+complètement différent d'un fichier à l'autre.
+
+Les volumes sont donc **calculés** : chaque son a un rôle, chaque rôle a un
+niveau de sortie, et le coefficient ramène le fichier à ce niveau.
+
+| Rôle | Niveau | Qui |
+|---|---|---|
+| `repetitif` | le plus discret | pas, flèches, survol de menu — ça sonne plusieurs fois par seconde |
+| `discret` | bas | pièges, plaques, gouttes, grincements |
+| `normal` | moyen | ramasser, ouvrir, planter, clic de menu |
+| `marquant` | le plus fort | alertes, cri de douleur, jumpscare, fin de partie |
+| `boucle` | bas | respiration, poursuite, musique — ça fatigue vite |
+
+```bash
+.venv/bin/python tools/check_audio_levels.py
+```
+
+**Relancez cette commande après avoir remplacé un fichier audio.** Elle mesure
+tous les fichiers, vérifie que chacun sort au niveau de son rôle, et donne la
+valeur exacte à mettre dans `AUDIO_VOLUMES`. Un son enregistré plus fort que
+celui qu'il remplace déséquilibre tout le mixage sans que rien ne le signale en
+jeu.
+
+Si le jeu est globalement trop fort ou trop faible, ce n'est plus qu'un seul
+réglage : `AUDIO_MASTER_VOLUME`. Il monte ou baisse tout **uniformément**, sans
+casser l'équilibre.
+
+### Huit fichiers ont été réamplifiés
+
+Ils étaient trop faibles pour être rattrapés : même à plein volume, ils
+seraient restés inaudibles à côté des autres. Ils ont donc été amplifiés
+**dans le fichier**, sans jamais atteindre l'écrêtage (chacun avait largement la
+marge nécessaire en crête).
+
+| Fichier | Gain |
+|---|---|
+| `player/breathing.wav` | x6,9 |
+| `monster/alerts/far_away.wav` | x5,6 |
+| `monster/final_timer.wav` | x3,4 |
+| `menu/hover_button.wav` | x3,4 |
+| `items/key/get.wav` | x2,6 |
+| `items/torch/get.wav` | x2,6 |
+| `monster/alerts/near.wav` | x2,4 |
+| `misc/doors/door_locked.wav` | x1,8 |
+
+Si vous ré-exportez l'un d'eux, **exportez-le plus fort** (visez une crête autour
+de -3 dBFS) plutôt que de compter sur une nouvelle réamplification.
+
 ## Contraintes de format
 
 - Le jeu lit du **WAV** et du **MP3**. Le 24 bits passe, le 96 kHz aussi, mais
   ça pèse dix fois plus lourd pour rien : **16 bits / 44,1 kHz** suffit
   largement pour un bruitage.
+- **Exportez fort** : une crête autour de -3 dBFS. C'est le jeu qui baisse
+  ensuite chaque son au niveau de son rôle, et il ne peut pas remonter un
+  fichier enregistré trop bas.
 - **Coupez le silence et la queue de réverbération** de vos prises. Le premier
   `pressure_plate.wav` livré durait 22,9 s pour 6,3 Mo (quatre prises à la
   suite) : il a dû être recoupé à 0,9 s, sans quoi la plaque déclenchait un son

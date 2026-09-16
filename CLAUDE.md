@@ -77,6 +77,7 @@ Arcade **3.3.3**.
 .venv/bin/python tools/check_levels.py                # coherence logique des cartes
 .venv/bin/python tools/walk_test.py                   # praticabilite reelle (collisions)
 .venv/bin/python tools/smoke_test.py /tmp/shots       # partie complete scriptee + captures
+.venv/bin/python tools/check_audio_levels.py         # equilibre du mixage sonore
 ```
 
 Ces trois outils ont été vérifiés : ils **échouent réellement** quand la
@@ -86,6 +87,7 @@ mécanique correspondante est cassée. Ce ne sont pas des tests décoratifs.
 |-------|------------------|
 | `check_levels.py` | sortie inatteignable, clé enfermée derrière sa propre porte, fiole absente ou en double, torches insuffisantes, parcours trop long |
 | `walk_test.py` | couloir trop étroit pour la boîte de collision, passage bouché, **piège sans fenêtre sûre assez longue pour être traversé** |
+| `check_audio_levels.py` | un son qui sort beaucoup trop fort ou trop bas par rapport aux autres, un fichier livré trop faible pour être rattrapé |
 | `smoke_test.py` | régression de mécanique : pièges visibles, animation de mort, cadavre + objets tombés au sol, réapparition de la fiole, **mort par flèche puis cadavre-bouclier (l'archer tire toujours, aucune flèche ne passe le corps)**, lâcher de la créature, jumpscare, clé restituée après dévoration, changement de zone |
 
 `smoke_test.py` écrit des captures PNG : c'est aussi le moyen de **voir** le jeu
@@ -470,8 +472,19 @@ même nom ; l'inventaire complet, avec le moment exact où chacun joue, est dans
 - **Trois signaux, et eux seuls, disent au joueur combien de temps il lui
   reste** : un grognement différent par palier (`TENSION_CUES`, exactement les
   quatre murmures rouges de l'ATH), sa respiration (souffle occasionnel au
-  calme, halètement **en boucle** à partir du palier `near`), et la musique de
+  calme, halètement **en boucle** à partir du palier `close`), et la musique de
   poursuite. Baisser leur volume revient à retirer au joueur sa seule horloge.
+- **La respiration est le son le plus facile à rater.** C'est un fond permanent :
+  trop forte ou trop fréquente, elle cesse d'être « le personnage a peur » pour
+  devenir « quelqu'un souffle dans le micro ». Elle a son propre niveau de
+  sortie, sous tous les autres (rôle `souffle`), le halètement continu ne
+  démarre qu'à l'avant-dernier palier, et le souffle occasionnel se tire toutes
+  les 30 à 60 s. Attention en réglant ce délai : la phase calme ne dure qu'une
+  quarantaine de secondes par vie, au-delà de 40 s de délai mini on ne l'entend
+  simplement plus jamais.
+- **La goutte d'eau est tirée 4 fois plus souvent que le grincement**
+  (`AUDIO_AMBIENCE_WEIGHTS`) : elle est courte et discrète, alors que le
+  grincement dure dix secondes et envahit tout à fréquence égale.
 - **La musique de poursuite se déclenche plus LOIN que la créature n'est
   visible** (`AUDIO_CHASE_RADIUS` = 340 px contre `MONSTER_VISIBLE_RADIUS` =
   160) : il doit l'entendre arriver avant de la voir. Elle continue
@@ -501,6 +514,16 @@ même nom ; l'inventaire complet, avec le moment exact où chacun joue, est dans
   le son ne se coupe pas entre la fin d'une partie et le retour à l'accueil.
 - Le **son de survol** du menu ne joue que si la sélection CHANGE, sinon le
   moindre mouvement de souris le relance à chaque pixel.
+- **Les volumes de `AUDIO_VOLUMES` sont CALCULÉS, pas choisis à l'oreille.** Les
+  fichiers livrés avaient 34 dB d'écart de niveau d'enregistrement : un même
+  coefficient y donnait des résultats sans aucun rapport. Chaque son a un rôle
+  (`repetitif`, `discret`, `normal`, `marquant`, `boucle`), chaque rôle un
+  niveau de sortie, et `tools/check_audio_levels.py` calcule le coefficient qui
+  y amène le fichier. **Relancez-le après tout remplacement de fichier audio.**
+  Huit fichiers trop faibles pour être rattrapés par le volume ont dû être
+  réamplifiés dans le fichier lui-même (liste dans `assets/audio/README.md`).
+  Pour monter ou baisser le jeu entier, il n'y a qu'un réglage :
+  `AUDIO_MASTER_VOLUME`.
 
 ### Pièges déjà rencontrés
 

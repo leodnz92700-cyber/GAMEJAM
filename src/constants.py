@@ -317,63 +317,103 @@ DEATH_DEVOURED = "devoured"  # mort par la creature : aucun cadavre, tout est pe
 AUDIO_MASTER_VOLUME = 0.8             # volume general, applique a tout le reste
 
 # Volume de chaque son, par nom logique (voir SOUND_FILES dans audio_manager).
+#
+# Ces valeurs ne sont PAS choisies a l'oreille, elles sont CALCULEES : les
+# fichiers livres n'ont pas du tout le meme niveau d'enregistrement (34 dB
+# d'ecart entre le clic de menu et la respiration, soit un facteur 50), donc un
+# meme coefficient donne un resultat completement different d'un son a l'autre.
+# Chaque valeur ramene son fichier au niveau de sortie voulu pour son ROLE.
+#
+# `.venv/bin/python tools/check_audio_levels.py` mesure les fichiers, verifie
+# que tout sort au bon niveau et donne la valeur a mettre ici. **Relancez-le
+# apres avoir remplace un fichier audio** : un son enregistre plus fort que
+# l'ancien desequilibre tout le mixage sans que rien ne le signale en jeu.
+#
+# Les quatre niveaux de sortie, du plus discret au plus present :
+#   repetitif  ce qui sonne plusieurs fois par seconde (pas, fleches, survol)
+#   discret    le decor et l'ambiance : presents, sans attirer l'oreille
+#   normal     les actions du joueur : ramasser, ouvrir, planter
+#   marquant   ce qui previent d'un danger ou fait sursauter
+#   boucle     les sons continus, qui fatiguent vite s'ils sont forts
+#   souffle    la respiration seule : un fond permanent, elle passe sous tout
+#
+# Le dBFS indique en commentaire est le niveau du FICHIER : plus il est bas,
+# plus le fichier a ete enregistre faible, et plus son coefficient doit monter.
 AUDIO_VOLUMES = {
     # --- Joueur ---------------------------------------------------------- #
-    "footstep": 0.30,          # discret : il sonne plusieurs fois par seconde
-    "breathing": 0.55,         # valeur de base, montee par la tension
-    "pain": 0.85,
+    "footstep": 0.08,          # repetitif — fichier tres fort (-10 dBFS)
+    "breathing": 0.40,         # souffle — volume de base, monte par la tension
+    "pain": 0.51,              # marquant
     # --- Objets ---------------------------------------------------------- #
-    "potion_get": 0.75,
-    "potion_use": 0.90,        # la mort volontaire : elle doit s'entendre
-    "key_get": 0.75,
-    "key_use": 0.80,           # se superpose a l'ouverture de la porte
-    "torch_get": 0.70,
-    "torch_use": 0.75,
-    "pickup": 0.70,            # objets sans son dedie (le bouclier)
+    "potion_get": 0.77,        # normal
+    "potion_use": 0.24,        # marquant — la mort volontaire doit s'entendre
+    "key_get": 0.80,           # normal — fichier faible (-23 dBFS)
+    "key_use": 0.49,           # normal — se superpose a l'ouverture de la porte
+    "torch_get": 0.80,         # normal — fichier faible (-23 dBFS)
+    "torch_use": 0.70,         # normal
+    "pickup": 0.19,            # normal — objets sans son dedie (le bouclier)
     # --- Environnement ---------------------------------------------------- #
-    "door_open": 0.70,
-    "door_locked": 0.80,       # c'est une reponse a une action du joueur
-    "plate_press": 0.65,
-    "plate_release": 0.65,
-    "spike_strike": 0.55,      # joue une fois par cycle, et seulement dans la zone
-    "arrow_shot": 0.45,        # une toutes les 0,3 s : le moindre exces sature
+    "door_open": 0.75,         # normal
+    "door_locked": 0.79,       # normal — c'est une reponse a une action du joueur
+    "plate_press": 0.32,       # discret
+    "plate_release": 0.25,     # discret
+    "spike_strike": 0.12,      # discret — fichier tres fort (-10 dBFS)
+    "arrow_shot": 0.09,        # repetitif — une toutes les 0,3 s, le moindre exces sature
     # --- Ambiance ---------------------------------------------------------- #
-    "water_drop": 0.50,
-    "squeak": 0.40,
-    "menu_music": 0.45,
+    "water_drop": 0.24,        # discret
+    "squeak": 0.30,            # discret
+    "menu_music": 0.45,        # boucle — MP3, seul reglage encore fait a l'oreille
     # --- Interface --------------------------------------------------------- #
-    "ui_hover": 0.35,
-    "ui_click": 0.55,
+    "ui_hover": 0.81,          # repetitif — fichier tres faible (-30 dBFS)
+    "ui_click": 0.13,          # normal — fichier le plus fort du jeu (-7 dBFS)
     # --- Le monstre -------------------------------------------------------- #
-    "alert_far": 0.70,
-    "alert_near": 0.80,
-    "alert_close": 0.90,
-    "alert_released": 1.00,
-    "monster_released": 0.90,  # se superpose a l'alerte du lacher
-    "monster_chase": 0.75,
-    "monster_kill": 1.00,
+    "alert_far": 0.80,         # marquant — fichier faible (-20 dBFS)
+    "alert_near": 0.27,        # marquant
+    "alert_close": 0.81,       # marquant — fichier faible (-20 dBFS)
+    "alert_released": 0.37,    # marquant
+    "monster_released": 0.64,  # marquant — se superpose a l'alerte du lacher
+    "monster_chase": 0.31,     # boucle
+    "monster_kill": 0.80,      # marquant — fichier faible (-20 dBFS)
     # --- Fin de partie ----------------------------------------------------- #
-    "victory": 0.80,
-    "game_over": 0.80,
+    "victory": 0.23,           # marquant
+    "game_over": 0.24,         # marquant
 }
 
 # --- Pas du joueur ---------------------------------------------------------- #
 AUDIO_FOOTSTEP_INTERVAL = 0.34        # secondes entre deux pas (cale sur PLAYER_SPEED)
 
 # --- Respiration ------------------------------------------------------------ #
-# Deux regimes, comme demande : un souffle qui revient de temps en temps quand
-# tout est calme, et un halettement continu des que la bete se rapproche.
-AUDIO_BREATH_RANDOM_MIN = 18.0        # delai mini entre deux souffles au calme
-AUDIO_BREATH_RANDOM_MAX = 38.0        # ... et delai maxi
-AUDIO_BREATH_CALM_VOLUME = 0.35       # le souffle occasionnel reste en retrait
-AUDIO_BREATH_PANIC_STAGES = ("near", "close", "released")   # a partir d'ici, en continu
+# Deux regimes : un souffle qui revient de temps en temps quand tout est calme,
+# et un halettement continu quand la bete se rapproche.
+#
+# Elle est volontairement RARE et DISCRETE. C'est un son de fond permanent : dix
+# secondes de trop ou trois decibels de trop et elle passe de "le personnage a
+# peur" a "quelqu'un souffle dans le micro". Le halettement continu ne demarre
+# qu'au palier `close`, l'avant-dernier : arrive des `near`, il tournait pendant
+# la moitie de la partie et ne signalait plus rien.
+# Attention en reglant ces deux valeurs : la phase calme ne dure qu'une
+# quarantaine de secondes par vie (ensuite le halettement continu prend le
+# relais). Un delai mini superieur a ~40 s revient a ne plus jamais entendre le
+# souffle occasionnel.
+AUDIO_BREATH_RANDOM_MIN = 30.0        # delai mini entre deux souffles au calme
+AUDIO_BREATH_RANDOM_MAX = 60.0        # ... et delai maxi
+AUDIO_BREATH_CALM_VOLUME = 0.75       # le souffle occasionnel, un peu sous le halettement
+AUDIO_BREATH_PANIC_STAGES = ("close", "released")   # a partir d'ici, en continu
 
 # --- Ambiance aleatoire ----------------------------------------------------- #
 # Il n'y a PLUS de nappe de fond : le silence est le fond sonore du jeu, troue
 # de temps en temps par une goutte d'eau ou un grincement. C'est ce silence qui
 # rend les alertes du monstre audibles.
-AUDIO_AMBIENCE_MIN_DELAY = 12.0       # delai mini entre deux bruits d'ambiance
-AUDIO_AMBIENCE_MAX_DELAY = 35.0       # ... et delai maxi
+AUDIO_AMBIENCE_MIN_DELAY = 7.0        # delai mini entre deux bruits d'ambiance
+AUDIO_AMBIENCE_MAX_DELAY = 20.0       # ... et delai maxi
+
+# Poids de tirage de chaque bruit d'ambiance. La goutte d'eau est courte et
+# discrete, on peut l'entendre souvent sans lasser ; le grincement dure dix
+# secondes et devient vite envahissant. D'ou quatre gouttes pour un grincement.
+AUDIO_AMBIENCE_WEIGHTS = {
+    "water_drop": 4,
+    "squeak": 1,
+}
 
 # --- Sons du decor : pieges a pointes et fleches ----------------------------- #
 # Ces deux sons se repetent sans arret (un piege toutes les 3 s, une fleche

@@ -16,7 +16,7 @@ Déroulé d'une vie :
 
 Chaque palier a SON grognement (`audio_manager.TENSION_CUES`), et le meme texte
 s'affiche en rouge en haut de l'ecran : le joueur lit et entend la meme chose au
-meme instant. A partir du palier `near`, sa respiration s'affole en continu, et
+meme instant. A partir du palier `close`, sa respiration s'affole en continu, et
 la musique de poursuite demarre des que la creature s'approche — avant qu'elle
 ne soit visible.
 

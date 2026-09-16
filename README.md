@@ -329,6 +329,7 @@ GAMEJAM/
 │   ├── check_levels.py              # [Tom] Valide une carte : sortie atteignable, clé pas enfermée, fiole unique, torches
 │   ├── walk_test.py                 # [Tom] Traverse la carte avec le vrai moteur de collisions (couloirs étroits, pièges)
 │   ├── gen_placeholder_assets.py    # [Léo] Génère les sons de synthèse et le dégradé de lumière
+│   ├── check_audio_levels.py        # [Léo] NOUVEAU — vérifie que tous les sons sortent au même niveau
 │   └── smoke_test.py                # [Melvin] Rejoue une partie complète et capture des écrans
 │
 ├── assets/
@@ -535,7 +536,8 @@ conflits Git sont rares.
 | faire vivre les PNJ | `src/entities/npc.py` (squelette prêt, aucun PNJ posé) |
 | changer le comportement de la créature | `src/mechanics/monster_manager.py` |
 | remplacer un son | déposer le fichier sous le même nom (inventaire : `assets/audio/README.md`) |
-| régler le volume d'un son | `AUDIO_VOLUMES` dans `src/constants.py` |
+| régler le volume d'un son | `AUDIO_VOLUMES` dans `src/constants.py`, puis `tools/check_audio_levels.py` |
+| monter ou baisser tout le jeu | `AUDIO_MASTER_VOLUME` dans `src/constants.py` |
 | changer de sprites | `tools/import_pack_assets.py` (le jeu ne lit que `assets/sprites/`) |
 | retoucher le HUD ou les menus | `src/ui/` |
 | modifier la boucle de jeu | `src/views/game_view.py` |
@@ -548,6 +550,7 @@ affiché** pour la créature. Le joueur ne dispose que du son et de la lumière.
 ```bash
 python tools/import_pack_assets.py       # importe les sprites du pack Dungeons & Pixels
 python tools/gen_placeholder_assets.py   # regenere les sons et le degrade de lumiere
+python tools/check_audio_levels.py       # verifie l'equilibre des volumes sonores
 python tools/gen_placeholder_maps.py     # regenere les cartes (ECRASE les .tmx !)
 python tools/check_levels.py             # verifie que chaque niveau est terminable
 python tools/walk_test.py                # traverse chaque niveau avec le vrai moteur de collisions

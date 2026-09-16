@@ -71,9 +71,11 @@ SOUND_FILES = {
     "alert_near": "monster/alerts/mi_distance.wav",
     "alert_close": "monster/alerts/near.wav",
     "alert_released": "monster/alerts/now.wav",
-    "monster_released": "monster/final_timer.wav",
+    # Les deux sons ont ete echanges a la demande de l'equipe : `kill_sound`
+    # annonce desormais le lacher, et `final_timer` accompagne le jumpscare.
+    "monster_released": "monster/kill_sound.wav",
     "monster_chase": "monster/monster_chase.wav",
-    "monster_kill": "monster/kill_sound.wav",
+    "monster_kill": "monster/final_timer.wav",
     # --- Fin de partie -------------------------------------------------------- #
     "victory": "misc/victory.wav",                     # placeholder de synthèse
     "game_over": "misc/game_over.wav",                 # placeholder de synthèse
@@ -89,8 +91,11 @@ TENSION_CUES = {
     "released": "alert_released",  # "Elle est la."
 }
 
-# Sons d'ambiance tirés au hasard, dans le silence.
-AMBIENCE_CUES = ("water_drop", "squeak")
+# Sons d'ambiance tirés au hasard, dans le silence. Le tirage est PONDÉRÉ
+# (`C.AUDIO_AMBIENCE_WEIGHTS`) : la goutte d'eau revient bien plus souvent que le
+# grincement, qui dure dix secondes et lasserait à la même fréquence.
+AMBIENCE_CUES = tuple(C.AUDIO_AMBIENCE_WEIGHTS)
+AMBIENCE_WEIGHTS = tuple(C.AUDIO_AMBIENCE_WEIGHTS.values())
 
 # Son de ramassage propre à chaque type d'objet. Un objet absent de cette table
 # retombe sur le placeholder générique `pickup`.
@@ -260,7 +265,7 @@ class AudioManager:
         if self._ambience_timer > 0:
             return
         self._ambience_timer = self._next_ambience_delay()
-        self.play(self._rng.choice(AMBIENCE_CUES))
+        self.play(self._rng.choices(AMBIENCE_CUES, weights=AMBIENCE_WEIGHTS)[0])
 
     # ------------------------------------------------------------------ #
     # Pas et respiration du joueur
