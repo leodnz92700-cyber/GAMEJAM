@@ -91,6 +91,9 @@ class GameView(arcade.View):
         self.interaction_target = None
         self.death_timer = 0.0
         self.zone_fade = 0.0
+        self.fade_in = 0.5
+        self.fade_out = 0.0
+        self.next_view = None
         self.finished = False      # empêche de déclencher deux fins de partie
 
     # ------------------------------------------------------------------ #
@@ -146,7 +149,17 @@ class GameView(arcade.View):
     # Boucle de jeu
     # ------------------------------------------------------------------ #
     def on_update(self, delta_time: float) -> None:
-        if self.finished:
+        if self.fade_in > 0:
+            self.fade_in = max(0.0, self.fade_in - delta_time)
+        if self.fade_out > 0:
+            self.fade_out -= delta_time
+            if self.fade_out <= 0 and self.next_view:
+                self.window.show_view(self.next_view)
+                return
+
+        if self.finished and self.fade_out > 0:
+            return
+        elif self.finished:
             return
 
         self.hud.update(delta_time)
@@ -311,7 +324,8 @@ class GameView(arcade.View):
         self.finished = True
         self.audio.stop_all()
         self.score.save_run(victory=True)
-        self.window.show_view(VictoryView(self.score.stats))
+        self.next_view = VictoryView(self.score.stats)
+        self.fade_out = 0.5
 
     def _game_over(self, reason: str) -> None:
         from src.views.game_over_view import GameOverView
@@ -319,7 +333,8 @@ class GameView(arcade.View):
         self.finished = True
         self.audio.stop_all()
         self.score.save_run(victory=False)
-        self.window.show_view(GameOverView(self.score.stats, reason))
+        self.next_view = GameOverView(self.score.stats, reason)
+        self.fade_out = 0.5
 
     # ------------------------------------------------------------------ #
     # Entrées
@@ -368,7 +383,8 @@ class GameView(arcade.View):
 
         self.finished = True
         self.audio.stop_all()
-        self.window.show_view(MainMenuView())
+        self.next_view = MainMenuView()
+        self.fade_out = 0.5
 
     # ------------------------------------------------------------------ #
     # Rendu
@@ -485,7 +501,7 @@ class GameView(arcade.View):
             )
 
     def _draw_fades(self) -> None:
-        """Voile noir : changement de zone et écran de mort."""
+        """Voile noir : changement de zone, écran de mort, et transitions d'écran."""
         alpha = 0
         if self.zone_fade > 0:
             # Fondu symétrique : noir au milieu de la transition.
@@ -493,6 +509,13 @@ class GameView(arcade.View):
             alpha = int(200 * (1.0 - abs(progress - 0.5) * 2))
         if self.death_timer > 0:
             alpha = max(alpha, 235)
+        
+        # Transitions entre vues
+        if self.fade_in > 0:
+            alpha = max(alpha, int((self.fade_in / 0.5) * 255))
+        elif self.fade_out > 0:
+            alpha = max(alpha, int((1.0 - self.fade_out / 0.5) * 255))
+            
         if alpha <= 0:
             return
         arcade.draw_lbwh_rectangle_filled(

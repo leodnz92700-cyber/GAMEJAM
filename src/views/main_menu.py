@@ -129,6 +129,10 @@ class MainMenuView(arcade.View):
         self.camera = arcade.Camera2D(
             viewport=arcade.LBWH(0, 0, C.WINDOW_WIDTH, C.WINDOW_HEIGHT)
         )
+        
+        self.fade_in = 0.5
+        self.fade_out = 0.0
+        self.next_view = None
 
         # Les boutons sont empilés du BAS vers le haut : « Quitter » est collé
         # au bandeau d'aide, « Mode » touche le panneau de lore.
@@ -163,6 +167,17 @@ class MainMenuView(arcade.View):
     # ------------------------------------------------------------------ #
     # État du menu
     # ------------------------------------------------------------------ #
+    def on_update(self, delta_time: float) -> None:
+        if self.fade_in > 0:
+            self.fade_in = max(0.0, self.fade_in - delta_time)
+        if self.fade_out > 0:
+            self.fade_out -= delta_time
+            if self.fade_out <= 0:
+                if self.next_view == "quit":
+                    arcade.close_window()
+                elif self.next_view:
+                    self.window.show_view(self.next_view)
+
     @property
     def mode(self) -> str:
         return MODE_ORDER[self.mode_index]
@@ -233,13 +248,16 @@ class MainMenuView(arcade.View):
             self.audio.start_menu_music()
 
     def _activate(self, index: int) -> None:
+        if self.fade_out > 0:
+            return
         self.audio.play("ui_click")
         if index == 0:
             self._cycle_mode(1)
         elif index == 1:
             self._start_game()
         elif index == 2:
-            arcade.close_window()
+            self.fade_out = 0.5
+            self.next_view = "quit"
 
     def _start_game(self) -> None:
         from src.views.game_view import GameView
@@ -247,7 +265,8 @@ class MainMenuView(arcade.View):
         self.audio.stop_all()
         game = GameView(mode=self.mode)
         game.setup()
-        self.window.show_view(game)
+        self.fade_out = 0.5
+        self.next_view = game
 
     # ------------------------------------------------------------------ #
     # Rendu
@@ -260,6 +279,17 @@ class MainMenuView(arcade.View):
             self.buttons.draw()
             self._draw_mode_marker()
             self._draw_leaderboard()
+            
+            alpha = 0
+            if self.fade_in > 0:
+                alpha = int((self.fade_in / 0.5) * 255)
+            elif self.fade_out > 0:
+                alpha = int((1.0 - self.fade_out / 0.5) * 255)
+            
+            if alpha > 0:
+                arcade.draw_lbwh_rectangle_filled(
+                    0, 0, C.WINDOW_WIDTH, C.WINDOW_HEIGHT, (0, 0, 0, alpha)
+                )
 
     def on_resize(self, width: int, height: int) -> None:
         super().on_resize(width, height)

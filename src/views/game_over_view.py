@@ -29,26 +29,37 @@ class GameOverView(arcade.View):
         self.stats = stats
         self.audio = AudioManager()
         self.reason = reason
+        self.fade_in = 0.5
+        self.fade_out = 0.0
+        self.next_view = None
 
     def on_show_view(self) -> None:
         self.on_resize(self.window.width, self.window.height)
         self.window.background_color = C.COLOR_BACKGROUND
-        # L'accord de defaite une fois, puis la musique du menu : l'ecran de fin
-        # et l'ecran d'accueil sonnent pareil, et le son ne se coupe pas entre
-        # les deux.
         self.audio.play("game_over")
         self.audio.start_menu_music()
 
     def on_hide_view(self) -> None:
         self.audio.stop_all()
+        
+    def on_update(self, delta_time: float) -> None:
+        if self.fade_in > 0:
+            self.fade_in = max(0.0, self.fade_in - delta_time)
+        if self.fade_out > 0:
+            self.fade_out -= delta_time
+            if self.fade_out <= 0 and self.next_view:
+                self.window.show_view(self.next_view)
 
     def on_key_press(self, key: int, modifiers: int) -> None:
         from src.views.main_menu import MainMenuView
 
         if key in (arcade.key.ENTER, arcade.key.NUM_ENTER, arcade.key.SPACE,
                    arcade.key.ESCAPE):
+            if self.fade_out > 0:
+                return
             self.audio.play("ui_click")
-            self.window.show_view(MainMenuView())
+            self.fade_out = 0.5
+            self.next_view = MainMenuView()
 
     def on_draw(self) -> None:
         self.clear()
@@ -60,6 +71,17 @@ class GameOverView(arcade.View):
             C.COLOR_DANGER,
             self.stats,
         )
+        
+        alpha = 0
+        if self.fade_in > 0:
+            alpha = int((self.fade_in / 0.5) * 255)
+        elif self.fade_out > 0:
+            alpha = int((1.0 - self.fade_out / 0.5) * 255)
+        
+        if alpha > 0:
+            arcade.draw_lbwh_rectangle_filled(
+                0, 0, C.WINDOW_WIDTH, C.WINDOW_HEIGHT, (0, 0, 0, alpha)
+            )
 
     def on_resize(self, width: int, height: int) -> None:
         super().on_resize(width, height)
