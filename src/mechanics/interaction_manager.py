@@ -20,6 +20,7 @@ sont posées par terre autour du corps, et se ramassent comme le reste.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import random
 
 import arcade
 
@@ -189,6 +190,19 @@ class InteractionManager:
         if not npc.wants_item:
             return npc.next_line()
 
+        key_id = getattr(npc, "properties", {}).get("key_id")
+        
+        # Si le joueur possède déjà la clé demandée, le PNJ le remercie au lieu de redemander l'objet
+        if player.has_key(key_id):
+            phrases = [
+                "Un echange equitable. Va de l'avant.",
+                "Cet objet servira mes recherches. Ne traine pas.",
+                "Bien. La cle est a toi, accomplis ton destin.",
+                "Pars maintenant. Mon etude requiert le silence.",
+                "Interessant... Sers-toi de la cle et survis."
+            ]
+            return random.choice(phrases)
+
         item = player.inventory.find(npc.wants_item)
         if item is None:
             # Il réclame. Si la carte n'a pas écrit de réplique, on en fabrique
@@ -199,7 +213,6 @@ class InteractionManager:
             return npc.next_line()
 
         player.inventory.remove(item)
-        key_id = getattr(npc, "properties", {}).get("key_id")
         key_item = Item(C.ITEM_KEY, {"key_id": key_id} if key_id else {})
         if player.inventory.is_full:
             # Garde-fou : l'objet est retire AVANT que la cle soit rendue, donc

@@ -348,13 +348,12 @@ class Level:
         """
         restored: list[str] = []
         for item_type, (x, y), properties in self.unique_item_spawns:
-            if item_type == C.ITEM_VIAL:
-                # La FIOLE se juge a son emplacement, pas a l'echelle de
-                # l'etage : depuis que les objets se dupliquent a chaque mort
-                # (`respawn_carried_at_origin`), un exemplaire abandonne a
-                # l'autre bout de la carte suffisait a la faire passer pour
-                # « toujours presente », et le joueur revivait loin de toute
-                # fiole. Or se donner la mort doit rester possible a CHAQUE vie.
+            if item_type in (C.ITEM_VIAL, C.ITEM_SHIELD):
+                # La FIOLE et le BOUCLIER se jugent à leur emplacement d'origine.
+                # Depuis que les objets se dupliquent à chaque mort
+                # (`respawn_carried_at_origin`), un exemplaire abandonné à
+                # l'autre bout de la carte suffisait à le faire passer pour
+                # « toujours présent », et le joueur revivait sans.
                 if self._item_lies_at(item_type, x, y):
                     continue
             elif self._unique_item_exists(item_type, properties, player):
