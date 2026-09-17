@@ -95,6 +95,7 @@ class GameView(arcade.View):
         self.fade_out = 0.0
         self.next_view = None
         self.finished = False      # empêche de déclencher deux fins de partie
+        self.demo_mode = False     # F4: God Mode & Pleine lumière
 
     # ------------------------------------------------------------------ #
     # Mise en place
@@ -213,8 +214,9 @@ class GameView(arcade.View):
         if self._check_hazards():
             return
         if self.monster_manager.update(delta_time, self.player, self.level):
-            self._die(C.DEATH_DEVOURED)
-            return
+            if not self.demo_mode:
+                self._die(C.DEATH_DEVOURED)
+                return
         if self.level.reached_exit(self.player):
             self._victory()
             return
@@ -237,6 +239,9 @@ class GameView(arcade.View):
 
     def _check_hazards(self) -> bool:
         """Pièges à pointes et fléchettes. Renvoie True si le joueur est mort."""
+        if self.demo_mode:
+            return False
+            
         for trap in self.level.trap_list:
             if not isinstance(trap, SpikeTrap) or not trap.is_lethal:
                 continue
@@ -366,7 +371,9 @@ class GameView(arcade.View):
         elif key == arcade.key.M:
             self.hud.show_message(self.interaction.drop_item(self.player, self.level))
         elif key == arcade.key.K:
-            if self.interaction.consume_vial(self.player):
+            if self.demo_mode:
+                self.hud.show_message("Tu es invincible. La fiole n'a aucun effet.")
+            elif self.interaction.consume_vial(self.player):
                 self._die(C.DEATH_VIAL)
             else:
                 self.hud.show_message("Tu n'as pas de fiole. Cherche un piege.")
@@ -374,6 +381,10 @@ class GameView(arcade.View):
             from src.views.objectives_view import ObjectivesView
             self.keys_down.clear()
             self.window.show_view(ObjectivesView(self))
+        elif key == arcade.key.F4:
+            self.demo_mode = not self.demo_mode
+            self.lighting.darkness = 0.0 if self.demo_mode else C.DARKNESS_ALPHA / 255.0
+            self.hud.show_message("Mode Demo active (Invincible + Lumiere)" if self.demo_mode else "Mode Demo desactive")
 
     def on_key_release(self, key: int, modifiers: int) -> None:
         self.keys_down.discard(key)
