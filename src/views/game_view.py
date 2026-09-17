@@ -36,6 +36,7 @@ from src.mechanics.monster_manager import MonsterManager
 from src.mechanics.score_manager import ScoreManager
 from src.ui.hud import HUD
 from src.ui.screamer import Screamer
+from src.camera_utils import apply_letterbox
 
 # Touches de déplacement (clavier AZERTY + flèches).
 KEYS_UP = (arcade.key.Z, arcade.key.UP)
@@ -72,7 +73,9 @@ class GameView(arcade.View):
         self.camera = arcade.Camera2D(
             viewport=arcade.LBWH(0, 0, C.VIEWPORT_WIDTH, C.VIEWPORT_HEIGHT)
         )
-        self.camera_gui = arcade.Camera2D()
+        self.camera_gui = arcade.Camera2D(
+            viewport=arcade.LBWH(0, 0, C.VIEWPORT_WIDTH, C.VIEWPORT_HEIGHT)
+        )
 
         self.level = None
         self.player: Player | None = None
@@ -95,6 +98,7 @@ class GameView(arcade.View):
     # ------------------------------------------------------------------ #
     def setup(self) -> None:
         """Prépare une partie complète (appelé une fois avant d'afficher la vue)."""
+        self.on_resize(self.window.width, self.window.height)
         self.level = self.level_manager.load_current()
         self.player = Player(*self.level.spawn_point)
         self._rebuild_physics()
@@ -494,3 +498,8 @@ class GameView(arcade.View):
         arcade.draw_lbwh_rectangle_filled(
             0, 0, C.WINDOW_WIDTH, C.WINDOW_HEIGHT, (0, 0, 0, alpha)
         )
+
+    def on_resize(self, width: int, height: int) -> None:
+        super().on_resize(width, height)
+        apply_letterbox(self.camera, width, height)
+        apply_letterbox(self.camera_gui, width, height)

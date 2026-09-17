@@ -8,6 +8,7 @@ des choses a faire, puis appuie sur une touche pour demarrer la partie.
 from __future__ import annotations
 
 import arcade
+from src.camera_utils import apply_letterbox
 
 from src import constants as C
 from src.ui.text_cache import draw_text_cached
@@ -30,9 +31,11 @@ class ObjectivesView(arcade.View):
 
     def __init__(self, game_view: GameView):
         super().__init__()
+        self.camera = arcade.Camera2D(viewport=arcade.LBWH(0,0,C.WINDOW_WIDTH,C.WINDOW_HEIGHT))
         self.game_view = game_view
 
     def on_show_view(self) -> None:
+        self.on_resize(self.window.width, self.window.height)
         self.window.background_color = C.COLOR_BACKGROUND
 
     def on_key_press(self, key: int, modifiers: int) -> None:
@@ -45,6 +48,7 @@ class ObjectivesView(arcade.View):
 
     def on_draw(self) -> None:
         self.clear()
+        self.camera.use()
 
         cx = C.WINDOW_WIDTH / 2
         top = C.WINDOW_HEIGHT - 120
@@ -68,3 +72,7 @@ class ObjectivesView(arcade.View):
             cx, 60, C.COLOR_TEXT_DIM, 16,
             anchor_x="center", italic=True,
         )
+
+    def on_resize(self, width: int, height: int) -> None:
+        super().on_resize(width, height)
+        apply_letterbox(self.camera, width, height)

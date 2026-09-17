@@ -13,6 +13,7 @@ lecture la plus parlante du theme.
 from __future__ import annotations
 
 import arcade
+from src.camera_utils import apply_letterbox
 
 from src import constants as C
 from src.mechanics.audio_manager import AudioManager
@@ -24,10 +25,12 @@ class VictoryView(arcade.View):
 
     def __init__(self, stats):
         super().__init__()
+        self.camera = arcade.Camera2D(viewport=arcade.LBWH(0,0,C.WINDOW_WIDTH,C.WINDOW_HEIGHT))
         self.stats = stats
         self.audio = AudioManager()
 
     def on_show_view(self) -> None:
+        self.on_resize(self.window.width, self.window.height)
         self.window.background_color = C.COLOR_BACKGROUND
         # La fanfare de sortie une fois, puis la musique du menu : l'ecran de fin
         # et l'ecran d'accueil sonnent pareil, et le son ne se coupe pas entre
@@ -48,6 +51,7 @@ class VictoryView(arcade.View):
 
     def on_draw(self) -> None:
         self.clear()
+        self.camera.use()
         draw_end_screen(
             "TU ES SORTI",
             C.COLOR_ACCENT,
@@ -64,3 +68,7 @@ class VictoryView(arcade.View):
         if chosen == 0:
             return "Sorti sans jamais te sacrifier. La tour t'a laisse passer."
         return f"{chosen} morts choisies, {self.stats.deaths_devoured} subies."
+
+    def on_resize(self, width: int, height: int) -> None:
+        super().on_resize(width, height)
+        apply_letterbox(self.camera, width, height)

@@ -43,6 +43,7 @@ from src.ui.menu_components import (
     draw_table,
 )
 from src.ui.text_cache import draw_text_cached
+from src.camera_utils import apply_letterbox
 
 # Le panneau de lore tient DOUZE lignes de 13 px, lignes vides comprises, soit
 # environ 50 caracteres par ligne. Au-dela, le texte deborde par le bas sans le
@@ -125,6 +126,10 @@ class MainMenuView(arcade.View):
         self.score = ScoreManager()
         self.leaderboard = self.score.load_leaderboard()
 
+        self.camera = arcade.Camera2D(
+            viewport=arcade.LBWH(0, 0, C.WINDOW_WIDTH, C.WINDOW_HEIGHT)
+        )
+
         # Les boutons sont empilés du BAS vers le haut : « Quitter » est collé
         # au bandeau d'aide, « Mode » touche le panneau de lore.
         center_x = LEFT_X + LEFT_WIDTH / 2
@@ -147,6 +152,7 @@ class MainMenuView(arcade.View):
         self._refresh_labels()
 
     def on_show_view(self) -> None:
+        self.on_resize(self.window.width, self.window.height)
         self.window.background_color = C.COLOR_BACKGROUND
         self.leaderboard = self.score.load_leaderboard()
         self.audio.start_menu_music()
@@ -188,11 +194,15 @@ class MainMenuView(arcade.View):
             arcade.close_window()
 
     def on_mouse_motion(self, x: float, y: float, dx: float, dy: float) -> None:
+        vec = self.camera.unproject((x, y))
+        x, y = vec.x, vec.y
         previous = self.buttons.selected
         self.buttons.on_mouse_motion(x, y)
         self._play_hover(previous)
 
     def on_mouse_press(self, x: float, y: float, button: int, modifiers: int) -> None:
+        vec = self.camera.unproject((x, y))
+        x, y = vec.x, vec.y
         if self.buttons.on_mouse_press(x, y) is not None:
             self._activate(self.buttons.selected)
 
@@ -244,11 +254,16 @@ class MainMenuView(arcade.View):
     # ------------------------------------------------------------------ #
     def on_draw(self) -> None:
         self.clear()
-        draw_logo(C.WINDOW_WIDTH / 2, LOGO_CENTER_Y, LOGO_MAX_WIDTH, LOGO_MAX_HEIGHT)
-        self._draw_lore()
-        self.buttons.draw()
-        self._draw_mode_marker()
-        self._draw_leaderboard()
+        with self.camera.activate():
+            draw_logo(C.WINDOW_WIDTH / 2, LOGO_CENTER_Y, LOGO_MAX_WIDTH, LOGO_MAX_HEIGHT)
+            self._draw_lore()
+            self.buttons.draw()
+            self._draw_mode_marker()
+            self._draw_leaderboard()
+
+    def on_resize(self, width: int, height: int) -> None:
+        super().on_resize(width, height)
+        apply_letterbox(self.camera, width, height)
 
     def _draw_lore(self) -> None:
         top = draw_panel(

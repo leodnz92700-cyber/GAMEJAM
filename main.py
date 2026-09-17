@@ -40,7 +40,8 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    window = arcade.Window(C.WINDOW_WIDTH, C.WINDOW_HEIGHT, C.WINDOW_TITLE)
+    window = arcade.Window(C.WINDOW_WIDTH, C.WINDOW_HEIGHT, C.WINDOW_TITLE, resizable=True)
+    window.maximize()
     window.background_color = C.COLOR_BACKGROUND
 
     if args.skip_menu or args.map:
