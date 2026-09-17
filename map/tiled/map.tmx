@@ -444,43 +444,43 @@
   <object id="94" name="Shield" type="object" x="55" y="1215">
    <point/>
   </object>
-  <object id="95" name="Skeleton1" type="skeleton" x="192" y="863">
+  <object id="95" name="Skeleton1" type="skeleton" x="192" y="850">
    <properties>
     <property name="direction" value="up"/>
    </properties>
    <point/>
   </object>
-  <object id="96" name="Skeleton2" type="skeleton" x="772" y="208">
+  <object id="96" name="Skeleton2" type="skeleton" x="784" y="208">
    <properties>
     <property name="direction" value="right"/>
    </properties>
    <point/>
   </object>
-  <object id="97" name="Skeleton3" type="skeleton" x="864" y="519.667">
+  <object id="97" name="Skeleton3" type="skeleton" x="864" y="526.667">
    <properties>
     <property name="direction" value="down"/>
    </properties>
    <point/>
   </object>
-  <object id="98" name="Skeleton4" type="skeleton" x="832" y="1118.33">
+  <object id="98" name="Skeleton4" type="skeleton" x="832" y="1105.33">
    <properties>
     <property name="direction" value="up"/>
    </properties>
    <point/>
   </object>
-  <object id="99" name="Skeleton5" type="skeleton" x="1824" y="38">
+  <object id="99" name="Skeleton5" type="skeleton" x="1824" y="48">
    <properties>
     <property name="direction" value="down"/>
    </properties>
    <point/>
   </object>
-  <object id="100" name="Skeleton6" type="skeleton" x="2085" y="1120">
+  <object id="100" name="Skeleton6" type="skeleton" x="2097" y="1120">
    <properties>
     <property name="direction" value="right"/>
    </properties>
    <point/>
   </object>
-  <object id="101" name="Skeleton7" type="skeleton" x="2182" y="565">
+  <object id="101" name="Skeleton7" type="skeleton" x="2192" y="565">
    <properties>
     <property name="direction" value="right"/>
    </properties>
