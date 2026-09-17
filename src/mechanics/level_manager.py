@@ -99,6 +99,16 @@ class Level:
                 self.exit_list.append(sprite)
                 self.exit_rect = map_object.position
 
+            elif kind == "torch" and map_object.properties.get("is_lighted"):
+                # Torche deja allumee des le debut du niveau, comme si elle
+                # avait ete plantee par une vie precedente : c'est un objet du
+                # DECOR (`torch_list`), jamais un item ramassable. Contrairement
+                # aux torches normales (ci-dessous, dans `item_list`), le
+                # joueur ne peut ni la ramasser ni l'eteindre -- exactement le
+                # meme chemin de code que `plant_torch` utilise pour une
+                # torche plantee manuellement (voir `interaction_manager`).
+                self.add_torch(*map_object.position)
+
             elif kind in ("key", "vial", "torch", "shield", "potion", "object"):
                 item = make_item_from_map_object(map_object)
                 # Emplacement de level design de CET objet. Il voyage avec lui

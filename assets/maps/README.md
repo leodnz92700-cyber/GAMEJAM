@@ -55,7 +55,7 @@ tuiles avec des pièges, posez deux objets côte à côte.
 | `Exit`            | `exit`            | la tuile du bas de l'escalier (le sprite fait 2 tuiles) |
 | `Items`           | `key`             | `key_id` : la serrure correspondante                   |
 | `Items`           | `vial`            | **une seule par niveau**, à quelques pas du départ      |
-| `Items`           | `torch`           | en semer beaucoup (voir plus bas)                      |
+| `Items`           | `torch`           | en semer beaucoup (voir plus bas). `is_lighted` (propriété **bool**, cochée dans Tiled) en fait une torche **du décor**, déjà allumée au chargement du niveau, jamais ramassable -- exactement comme si le joueur l'avait déjà plantée. Sans cette propriété (ou décochée), c'est un item normal : au sol, éteint, à ramasser puis planter (`F`). |
 | `Doors`           | `door_key`        | `door_id`, `key_id`, `passage`                        |
 | `Doors`           | `door_plate`      | `door_id`, `plate_id`, `passage`                      |
 | `PressurePlates`  | `pressure_plate`  | `plate_id`, `door_id` (la porte commandée)             |
